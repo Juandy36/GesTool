@@ -1,0 +1,28 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Rol {
+  ADMIN
+  BODEGUERO
+}
+
+model Usuario {
+  id                  String   @id @default(cuid())
+  usuario             String   @unique
+  nombre              String
+  passwordHash        String
+  rol                 Rol      @default(BODEGUERO)
+  debeCambiarPassword Boolean  @default(true)
+  activo              Boolean  @default(true)
+  creadoEn            DateTime @default(now())
+  actualizadoEn       DateTime @updatedAt
+}

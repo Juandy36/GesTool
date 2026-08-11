@@ -21,10 +21,17 @@ pnpm dev                           # servidor de desarrollo
 pnpm build                         # build de producción
 pnpm lint                          # lint
 
-pnpm dlx prisma studio             # explorar la DB
-pnpm dlx prisma migrate dev        # crear/aplicar migración en dev
+pnpm db:migrate                    # crear/aplicar migración en dev
+pnpm db:seed                       # crear el admin inicial
+pnpm db:studio                     # explorar la DB
+pnpm db:reset                      # BORRA la DB y re-siembra (pedir confirmación antes)
+pnpm check:login                   # check end-to-end del login (requiere `pnpm dev` arriba)
 pnpm dlx prisma generate           # regenerar Prisma Client
 ```
+
+Prisma 7 exige driver adapter: `new PrismaClient({ adapter: new PrismaPg({ ... }) })`.
+El cliente se genera en `src/generated/prisma/` (gitignored), se importa desde
+`@/generated/prisma/client` y los enums desde `@/generated/prisma/enums`.
 
 ## Convenciones de código
 
@@ -35,13 +42,26 @@ pnpm dlx prisma generate           # regenerar Prisma Client
   (ej. `stock-badge.tsx`), carpetas de rutas en `app/` en minúsculas.
   Componente exportado en PascalCase.
 - **Tipos:** TypeScript estricto (`strict: true`). Tipos de datos derivados
-  del schema de Prisma (`import type { Item } from "@prisma/client"`), no
-  duplicar shapes a mano. Validación de entrada (forms, API routes) con
+  del schema de Prisma (`import type { Usuario } from "@/generated/prisma/models"`),
+  no duplicar shapes a mano. Validación de entrada (forms, API routes) con
   esquemas Zod; inferir el tipo con `z.infer<typeof schema>` en vez de
   declararlo aparte.
 - **Errores:** en API routes / server actions, validar con Zod al inicio y
   devolver 4xx con mensaje claro si falla; no dejar que un error de Prisma
   llegue crudo al cliente. No usar `any` para silenciar errores de tipos.
+
+## Autenticación
+
+- **No hay `middleware.ts` y es a propósito.** El guard de sesión vive en
+  `src/app/(app)/layout.tsx`. Middleware corre en Edge, donde Prisma no
+  funciona, y obligaría a partir la config de NextAuth en dos archivos.
+  Toda ruta protegida va dentro del grupo `(app)`.
+- Sesión por **JWT**, sin adapter ni tablas de NextAuth. `rol` y
+  `debeCambiarPassword` viajan en el token.
+- El token no se refresca solo: al cambiar la contraseña se hace `signOut`
+  para que el flag `debeCambiarPassword` se recalcule en el próximo login.
+- `/cambiar-password` vive **fuera** del grupo `(app)` a propósito: si
+  estuviera dentro, el propio guard la redirigiría a sí misma en bucle.
 
 ## Reglas de Git — estrictas
 
@@ -93,3 +113,13 @@ como archivo descargable generado en el momento (no se guarda en disco).
 
 **Preferencia de tema** (claro/oscuro) persiste entre sesiones — asociarla
 al usuario o a localStorage, no recalcular por request.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
