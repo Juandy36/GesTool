@@ -25,9 +25,20 @@ pnpm db:migrate                    # crear/aplicar migración en dev
 pnpm db:seed                       # crear el admin inicial
 pnpm db:studio                     # explorar la DB
 pnpm db:reset                      # BORRA la DB y re-siembra (pedir confirmación antes)
-pnpm check:login                   # check end-to-end del login (requiere `pnpm dev` arriba)
 pnpm dlx prisma generate           # regenerar Prisma Client
+
+pnpm check:reglas                  # RBAC + semáforo de stock (no necesita servidor)
+pnpm check:login                   # login end-to-end (requiere `pnpm dev` arriba)
+pnpm check:inventario              # inventario end-to-end (requiere `pnpm dev` arriba)
 ```
+
+Los `check:*` en `.sh` **necesitan Git Bash**: desde PowerShell el `bash` del
+PATH es el stub de WSL y falla con `REGDB_E_CLASSNOTREG`. Correrlos desde la
+terminal Git Bash, o `& "C:\Program Files\Git\bin\bash.exe" scripts/<x>.sh`.
+`check:reglas` es TypeScript y corre en cualquier shell.
+
+Migrar **no** regenera el cliente solo: tras cambiar el schema, correr
+`pnpm dlx prisma generate` o el cliente queda sin los modelos nuevos.
 
 Prisma 7 exige driver adapter: `new PrismaClient({ adapter: new PrismaPg({ ... }) })`.
 El cliente se genera en `src/generated/prisma/` (gitignored), se importa desde
@@ -62,6 +73,10 @@ El cliente se genera en `src/generated/prisma/` (gitignored), se importa desde
   para que el flag `debeCambiarPassword` se recalcule en el próximo login.
 - `/cambiar-password` vive **fuera** del grupo `(app)` a propósito: si
   estuviera dentro, el propio guard la redirigiría a sí misma en bucle.
+- **RBAC:** esconder el botón no es control de acceso. Toda server action de
+  escritura arranca con `await soloAdmin()` (`src/lib/rbac.ts`) y devuelve el
+  mensaje si el rol no alcanza. `pnpm check:reglas` falla si alguien agrega una
+  acción sin ese guard.
 
 ## Reglas de Git — estrictas
 
@@ -75,6 +90,24 @@ El cliente se genera en `src/generated/prisma/` (gitignored), se importa desde
   probar.
 - No usar `--force` sobre `main`/`dev`, no hacer `rebase -i` de historia ya
   compartida.
+
+## Inventario
+
+- **TanStack Table v9**, que **no** es la v8 que conoces: `useTable` en vez de
+  `useReactTable`, features registradas a mano con `tableFeatures({...})`,
+  `<table.FlexRender />` en vez de la función `flexRender()`, y
+  `row.getAllCells()`. Hay guías en
+  `node_modules/@tanstack/react-table/skills/` — leerlas antes de tocar la tabla.
+- Filtrado y orden son **en cliente**: la página trae los ítems activos y la
+  tabla filtra sobre eso. Suficiente para un catálogo de bodega; si algún día
+  son decenas de miles, pasar a filtrado en servidor con estado en la URL.
+- La búsqueda es global pero acotada a nombre y código vía
+  `getColumnCanGlobalFilter`; el filtro de categoría es un column filter con
+  `equalsString`.
+- Los modales son `<dialog>` nativo (`showModal()`): el foco atrapado, Esc y el
+  backdrop los da el navegador. Los hijos se montan solo con el modal abierto,
+  porque los `defaultValue` del formulario no se refrescarían al cambiar de ítem.
+- El formulario de ítem **no tiene campo de stock** y no debe tenerlo.
 
 ## Modelo de datos / funcionalidades (resumen de funciones.md)
 
