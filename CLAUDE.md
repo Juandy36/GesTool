@@ -80,6 +80,11 @@ El cliente se genera en `src/generated/prisma/` (gitignored), se importa desde
 
 ## Reglas de Git — estrictas
 
+- **NUNCA hacer `git commit` por cuenta propia.** Solo se commitea cuando el
+  usuario lo pide explícitamente. Terminar una tarea, dejar los checks en
+  verde o "el árbol quedó limpio" **no** son permiso para commitear: se deja
+  el trabajo en el working tree y se le avisa que está listo para commit.
+  Lo mismo aplica a `git push`, `git merge` y crear ramas.
 - `main`: producción, protegida. Solo se actualiza vía Pull Request desde
   `dev`. Nunca commit ni push directo a `main`.
 - `dev`: integración. Recibe merges de ramas `feat/*` ya terminadas y
