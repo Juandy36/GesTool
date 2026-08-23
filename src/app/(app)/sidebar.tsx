@@ -8,6 +8,9 @@ const LINKS = [
   { href: "/inventario", label: "Inventario" },
   { href: "/entradas", label: "Entradas" },
   { href: "/salidas", label: "Salidas" },
+  { href: "/reportes", label: "Reportes" },
+  // Esconder el link no protege nada: la página y las actions validan el rol igual.
+  { href: "/usuarios", label: "Usuarios", soloAdmin: true },
 ];
 
 /**
@@ -16,7 +19,7 @@ const LINKS = [
  * En pantallas angostas es una fila horizontal scrolleable en vez de una barra
  * lateral: no hay drawer ni botón de menú porque con cuatro links no hace falta.
  */
-export default function Sidebar() {
+export default function Sidebar({ esAdmin }: { esAdmin: boolean }) {
   const pathname = usePathname();
 
   return (
@@ -25,7 +28,7 @@ export default function Sidebar() {
       className="flex shrink-0 gap-1 overflow-x-auto border-b border-black/10 p-3 md:w-52 md:flex-col md:overflow-visible md:border-r md:border-b-0 dark:border-white/15"
     >
       <span className="hidden px-3 pb-3 text-lg font-semibold md:block">GesTool</span>
-      {LINKS.map(({ href, label }) => {
+      {LINKS.filter((l) => esAdmin || !l.soloAdmin).map(({ href, label }) => {
         const activo = pathname === href || pathname.startsWith(`${href}/`);
         return (
           <Link

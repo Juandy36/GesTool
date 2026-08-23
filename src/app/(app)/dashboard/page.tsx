@@ -73,7 +73,15 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-semibold">Dashboard</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold">Dashboard</h1>
+        <a
+          href="/api/inventario/export"
+          className="rounded border border-black/20 px-3 py-2 text-sm dark:border-white/25"
+        >
+          Exportar a Excel
+        </a>
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Kpi titulo="Total de ítems" valor={total} pie="Activos en el catálogo" href="/inventario" />
@@ -91,9 +99,8 @@ export default async function DashboardPage() {
       <section className="rounded border border-amber-300 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/40">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-amber-300 px-4 py-3 dark:border-amber-900">
           <h2 className="font-semibold">Reposición urgente</h2>
-          {/* ponytail: /reportes todavía no existe; cambiar el href cuando esté. */}
-          <Link href="/inventario" className="text-sm underline underline-offset-4">
-            Ver reportes de inventario →
+          <Link href="/reportes" className="text-sm underline underline-offset-4">
+            Ver reporte completo →
           </Link>
         </div>
 

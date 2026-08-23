@@ -17,13 +17,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
-      <Sidebar />
+      <Sidebar esAdmin={session.user.rol === "ADMIN"} />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex flex-wrap items-center justify-end gap-3 border-b border-black/10 px-6 py-3 text-sm dark:border-white/15">
           {alertas > 0 && (
             <Link
-              href="/inventario"
+              href="/reportes"
               className="rounded-full bg-amber-100 px-3 py-1 font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-300"
             >
               {alertas} ítem(s) bajo mínimo

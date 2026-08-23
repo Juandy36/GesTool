@@ -109,6 +109,8 @@ enum AccionAuditoria {
   CATEGORIA_ELIMINADA
   ENTRADA_REGISTRADA
   SALIDA_REGISTRADA
+  USUARIO_CREADO
+  USUARIO_PASSWORD_RESET
 }
 
 /// Append-only igual que Entrada/Salida: se escribe y no se toca mas.
