@@ -1,25 +1,26 @@
 "use client";
 
 import { useTheme } from "next-themes";
+import Icono from "@/app/iconos";
 
 /**
- * Qué ícono se ve lo decide CSS con la variante `dark:`, no estado de React.
- * Así el marcado del servidor y el del cliente son idénticos y no hace falta
- * el típico flag de `mounted` para evitar el error de hidratación.
+ * El ícono lo elige el CSS y no el estado de React: así no hace falta el flag
+ * de `mounted` que suele necesitarse para no dibujar el ícono equivocado antes
+ * de hidratar.
  */
 export default function BotonTema() {
-  const { resolvedTheme, setTheme } = useTheme();
+  const { setTheme, resolvedTheme } = useTheme();
 
   return (
     <button
       type="button"
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-      aria-label="Cambiar entre tema claro y oscuro"
+      aria-label="Cambiar tema"
       title="Cambiar tema"
-      className="rounded border border-black/20 px-2 py-1 leading-none dark:border-white/25"
+      className="flex size-8 items-center justify-center rounded-md border border-border text-muted hover:text-text"
     >
-      <span className="dark:hidden">🌙</span>
-      <span className="hidden dark:inline">☀️</span>
+      <Icono nombre="luna" size={15} className="dark:hidden" />
+      <Icono nombre="sol" size={15} className="hidden dark:block" />
     </button>
   );
 }

@@ -23,7 +23,10 @@ if ! cred guardar "$USUARIO" "$SNAP"; then
 fi
 
 # Se instala recién con el snapshot en mano: restaurar sin él no restauraría nada.
+FANTASMA=qa.fantasma
+
 limpiar() {
+  cred borrar "$FANTASMA"
   cred restaurar "$SNAP" || echo "  !! quedaron sin restaurar las credenciales de $USUARIO ($SNAP)"
   rm -f "$JAR" "$SNAP"
 }
@@ -86,6 +89,20 @@ check "clave nueva entra"        '"rol":"ADMIN"'              "$(sesion)"
 check "ya no exige cambio"       '"debeCambiarPassword":false' "$(sesion)"
 check "dashboard accesible"      "200" \
   "$(curl -sS -c "$JAR" -b "$JAR" "$BASE/dashboard" -o /dev/null -w '%{http_code}')"
+
+echo "6. sesion cuya cuenta ya no existe"
+# El token es JWT y no se revalida contra la base: sobrevive a que borren la
+# cuenta. Sin la comprobacion de `sesionViva`, la app renderiza normal y revienta
+# en la primera escritura contra la foreign key de Auditoria.
+GHOST=$(mktemp)
+cred crear "$FANTASMA" "$CLAVE" BODEGUERO
+# `login` usa el jar global; el fantasma necesita el suyo, asi que va inline.
+gcsrf=$(curl -sS -c "$GHOST" -b "$GHOST" "$BASE/api/auth/csrf" | sed -E 's/.*"csrfToken":"([^"]+)".*/\1/')
+curl -sS -c "$GHOST" -b "$GHOST" -X POST "$BASE/api/auth/callback/credentials"   -d "usuario=$FANTASMA" -d "password=$CLAVE" -d "csrfToken=$gcsrf" -o /dev/null
+check "el fantasma entra" '"usuario":"'"$FANTASMA"'"'   "$(curl -sS -c "$GHOST" -b "$GHOST" "$BASE/api/auth/session")"
+cred borrar "$FANTASMA"
+check "con la cuenta borrada, el dashboard manda a login" "/login"   "$(curl -sS -c "$GHOST" -b "$GHOST" "$BASE/dashboard" -o /dev/null -w '%{redirect_url}')"
+rm -f "$GHOST"
 
 [[ $fail -eq 0 ]] && echo "TODO OK" || echo "HAY FALLOS"
 exit $fail

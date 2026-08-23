@@ -16,6 +16,8 @@ import {
   useTable,
 } from "@tanstack/react-table";
 import { type NivelStock } from "@/lib/stock";
+import Icono from "@/app/iconos";
+import { btnGhost, btnPrimario, campo, tabla, titulo } from "@/app/ui";
 import BadgeStock from "../badge-stock";
 import { darDeBajaItem } from "./actions";
 import FormularioItem from "./formulario-item";
@@ -65,7 +67,7 @@ function BotonBaja({ item }: { item: Fila }) {
         type="submit"
         disabled={pendiente}
         title={error || undefined}
-        className="text-red-600 underline underline-offset-4 disabled:opacity-50 dark:text-red-400"
+        className="text-xs text-danger underline underline-offset-2 disabled:opacity-50"
       >
         Dar de baja
       </button>
@@ -112,13 +114,15 @@ export default function TablaInventario({
         id: "acciones",
         header: "Acciones",
         cell: ({ row }) => (
-          <div className="flex gap-3 text-sm">
+          <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => setEditando(row.original)}
-              className="underline underline-offset-4"
+              aria-label={`Editar ${row.original.nombre}`}
+              title="Editar"
+              className="text-muted hover:text-text"
             >
-              Editar
+              <Icono nombre="editar" size={14} />
             </button>
             <BotonBaja item={row.original} />
           </div>
@@ -145,29 +149,21 @@ export default function TablaInventario({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Inventario</h1>
-        <div className="flex flex-wrap gap-3 text-sm">
-          <a
-            href="/api/inventario/export"
-            className="rounded border border-black/20 px-3 py-2 dark:border-white/25"
-          >
-            Exportar a Excel
+      <div className="flex flex-wrap items-center justify-between gap-2.5">
+        <h1 className={titulo}>Inventario</h1>
+        <div className="flex flex-wrap gap-2">
+          <a href="/api/inventario/export" className={btnGhost}>
+            <Icono nombre="descargar" size={14} grosor={2} />
+            Exportar
           </a>
           {esAdmin && (
             <>
-              <button
-                type="button"
-                onClick={() => setVerCategorias(true)}
-                className="rounded border border-black/20 px-3 py-2 dark:border-white/25"
-              >
+              <button type="button" onClick={() => setVerCategorias(true)} className={btnGhost}>
+                <Icono nombre="categorias" size={14} grosor={2} />
                 Categorías
               </button>
-              <button
-                type="button"
-                onClick={() => setCreando(true)}
-                className="rounded bg-foreground px-3 py-2 font-medium text-background"
-              >
+              <button type="button" onClick={() => setCreando(true)} className={btnPrimario}>
+                <Icono nombre="mas" size={14} grosor={2.2} />
                 Nuevo ítem
               </button>
             </>
@@ -175,20 +171,28 @@ export default function TablaInventario({
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-3">
-        <input
-          type="search"
-          value={table.state.globalFilter ?? ""}
-          onChange={(e) => table.setGlobalFilter(e.target.value)}
-          placeholder="Buscar por nombre o código…"
-          aria-label="Buscar por nombre o código"
-          className="min-w-60 flex-1 rounded border border-black/20 px-3 py-2 dark:border-white/25"
-        />
+      <div className="flex flex-wrap gap-2">
+        <div className="relative min-w-55 flex-1">
+          <Icono
+            nombre="buscar"
+            size={14}
+            grosor={2}
+            className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-faint"
+          />
+          <input
+            type="search"
+            value={table.state.globalFilter ?? ""}
+            onChange={(e) => table.setGlobalFilter(e.target.value)}
+            placeholder="Buscar por nombre o código…"
+            aria-label="Buscar por nombre o código"
+            className={`${campo} w-full pl-8`}
+          />
+        </div>
         <select
           value={filtroCategoria}
           onChange={(e) => columnaCategoria?.setFilterValue(e.target.value || undefined)}
           aria-label="Filtrar por categoría"
-          className="rounded border border-black/20 px-3 py-2 dark:border-white/25"
+          className={campo}
         >
           <option value="">Todas las categorías</option>
           {categorias.map((c) => (
@@ -199,16 +203,16 @@ export default function TablaInventario({
         </select>
       </div>
 
-      <div className="overflow-x-auto rounded border border-black/10 dark:border-white/15">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-black/10 dark:border-white/15">
+      <div className={tabla.marco}>
+        <table className={tabla.base}>
+          <thead className={tabla.encabezado}>
             {table.getHeaderGroups().map((grupo) => (
               <tr key={grupo.id}>
                 {grupo.headers.map((header) => {
                   const ordenable = header.column.getCanSort();
                   const orden = header.column.getIsSorted();
                   return (
-                    <th key={header.id} className="px-3 py-2 font-medium">
+                    <th key={header.id} className={tabla.th}>
                       {header.isPlaceholder ? null : ordenable ? (
                         <button
                           type="button"
@@ -230,15 +234,18 @@ export default function TablaInventario({
           <tbody>
             {visibles.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="px-3 py-6 text-center text-black/60 dark:text-white/60">
-                  No hay ítems que coincidan.
+                <td colSpan={columns.length} className={tabla.vacio}>
+                  <div className="flex flex-col items-center gap-2 text-faint">
+                    <Icono nombre="buscar" size={22} grosor={1.6} />
+                    <span className="text-[13px]">Ningún ítem coincide con la búsqueda.</span>
+                  </div>
                 </td>
               </tr>
             ) : (
               visibles.map((row) => (
-                <tr key={row.id} className="border-b border-black/5 last:border-0 dark:border-white/10">
+                <tr key={row.id} className={tabla.fila}>
                   {row.getAllCells().map((cell) => (
-                    <td key={cell.id} className="px-3 py-2">
+                    <td key={cell.id} className={tabla.td}>
                       <table.FlexRender cell={cell} />
                     </td>
                   ))}
@@ -249,7 +256,7 @@ export default function TablaInventario({
         </table>
       </div>
 
-      <p className="text-sm text-black/60 dark:text-white/60">
+      <p className="text-xs text-faint">
         {visibles.length} de {filas.length} ítem(s).
       </p>
 

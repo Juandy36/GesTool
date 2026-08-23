@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { btnPrimario, campo as campoBase, error as claseError, etiqueta } from "@/app/ui";
 import { cambiarPassword } from "./actions";
 
 const campos = [
@@ -13,22 +14,23 @@ export default function CambiarPasswordForm() {
   const [error, formAction, pending] = useActionState(cambiarPassword, undefined);
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={formAction} className="space-y-3" suppressHydrationWarning>
       {campos.map((campo) => (
-        <label key={campo.name} className="block space-y-1">
-          <span className="text-sm font-medium">{campo.label}</span>
+        <label key={campo.name} className="flex flex-col gap-1.5">
+          <span className={etiqueta}>{campo.label}</span>
           <input
             name={campo.name}
             type="password"
             required
             autoComplete={campo.autoComplete}
-            className="w-full rounded border border-black/20 px-3 py-2 dark:border-white/25"
+            className={`${campoBase} w-full`}
+            suppressHydrationWarning
           />
         </label>
       ))}
 
       {error && (
-        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+        <p role="alert" className={claseError}>
           {error}
         </p>
       )}
@@ -36,7 +38,7 @@ export default function CambiarPasswordForm() {
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded bg-foreground px-4 py-2 font-medium text-background disabled:opacity-50"
+        className={`${btnPrimario} mt-2 w-full py-2.5`}
       >
         {pending ? "Guardando…" : "Cambiar contraseña"}
       </button>

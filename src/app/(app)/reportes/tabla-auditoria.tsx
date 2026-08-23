@@ -10,6 +10,8 @@ import {
   useTable,
 } from "@tanstack/react-table";
 import { comoDdMmAaaa } from "@/lib/fechas";
+import Icono from "@/app/iconos";
+import { btnGhost, campoChico, etiqueta, tabla, tarjeta } from "@/app/ui";
 
 /**
  * `cuando` es el instante ya en hora local, `yyyy-mm-dd HH:mm`. Se filtra y se
@@ -47,7 +49,7 @@ const columns = helper.columns([
   helper.accessor("detalle", { header: "Detalle" }),
 ]);
 
-const campo = "rounded border border-black/20 px-2 py-1 text-sm dark:border-white/25";
+
 
 export default function TablaAuditoria({ filas }: { filas: FilaAuditoria[] }) {
   const [usuario, setUsuario] = useState("");
@@ -97,10 +99,10 @@ export default function TablaAuditoria({ filas }: { filas: FilaAuditoria[] }) {
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-end gap-3">
+      <div className={`${tarjeta} flex flex-wrap items-end gap-2.5`}>
         <label className="space-y-1">
-          <span className="block text-sm font-medium">Usuario</span>
-          <select value={usuario} onChange={(e) => setUsuario(e.target.value)} className={campo}>
+          <span className={`block ${etiqueta}`}>Usuario</span>
+          <select value={usuario} onChange={(e) => setUsuario(e.target.value)} className={campoChico}>
             <option value="">Todos</option>
             {usuarios.map(([id, nombre]) => (
               <option key={id} value={id}>
@@ -111,13 +113,13 @@ export default function TablaAuditoria({ filas }: { filas: FilaAuditoria[] }) {
         </label>
 
         <label className="space-y-1">
-          <span className="block text-sm font-medium">Desde</span>
-          <input type="date" value={desde} max={hasta || undefined} onChange={(e) => setDesde(e.target.value)} className={campo} />
+          <span className={`block ${etiqueta}`}>Desde</span>
+          <input type="date" value={desde} max={hasta || undefined} onChange={(e) => setDesde(e.target.value)} className={campoChico} />
         </label>
 
         <label className="space-y-1">
-          <span className="block text-sm font-medium">Hasta</span>
-          <input type="date" value={hasta} min={desde || undefined} onChange={(e) => setHasta(e.target.value)} className={campo} />
+          <span className={`block ${etiqueta}`}>Hasta</span>
+          <input type="date" value={hasta} min={desde || undefined} onChange={(e) => setHasta(e.target.value)} className={campoChico} />
         </label>
 
         {(usuario || desde || hasta) && (
@@ -128,7 +130,7 @@ export default function TablaAuditoria({ filas }: { filas: FilaAuditoria[] }) {
               setDesde("");
               setHasta("");
             }}
-            className="pb-1 text-sm underline underline-offset-4"
+            className="pb-2 text-xs underline underline-offset-[3px]"
           >
             Limpiar filtros
           </button>
@@ -136,21 +138,22 @@ export default function TablaAuditoria({ filas }: { filas: FilaAuditoria[] }) {
 
         <a
           href={exportar}
-          className="ml-auto rounded border border-black/20 px-3 py-2 text-sm dark:border-white/25"
+          className={`${btnGhost} ml-auto`}
         >
+          <Icono nombre="descargar" size={14} grosor={2} />
           Exportar a Excel
         </a>
       </div>
 
-      <div className="overflow-x-auto rounded border border-black/10 dark:border-white/15">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-black/10 dark:border-white/15">
+      <div className={tabla.marco}>
+        <table className={tabla.base}>
+          <thead className={tabla.encabezado}>
             {table.getHeaderGroups().map((grupo) => (
               <tr key={grupo.id}>
                 {grupo.headers.map((header) => {
                   const orden = header.column.getIsSorted();
                   return (
-                    <th key={header.id} className="px-3 py-2 font-medium">
+                    <th key={header.id} className={tabla.th}>
                       <button
                         type="button"
                         onClick={() => header.column.toggleSorting()}
@@ -168,15 +171,18 @@ export default function TablaAuditoria({ filas }: { filas: FilaAuditoria[] }) {
           <tbody>
             {visibles.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="px-3 py-6 text-center text-black/60 dark:text-white/60">
-                  Ningún evento coincide con los filtros.
+                <td colSpan={columns.length} className={tabla.vacio}>
+                  <div className="flex flex-col items-center gap-2 text-faint">
+                    <Icono nombre="lista" size={22} grosor={1.6} />
+                    <span className="text-[13px]">Ningún evento coincide con los filtros.</span>
+                  </div>
                 </td>
               </tr>
             ) : (
               table.getRowModel().rows.map((row) => (
-                <tr key={row.id} className="border-b border-black/5 last:border-0 dark:border-white/10">
+                <tr key={row.id} className={tabla.fila}>
                   {row.getAllCells().map((cell) => (
-                    <td key={cell.id} className="px-3 py-2">
+                    <td key={cell.id} className={tabla.td}>
                       <table.FlexRender cell={cell} />
                     </td>
                   ))}
@@ -187,7 +193,7 @@ export default function TablaAuditoria({ filas }: { filas: FilaAuditoria[] }) {
         </table>
       </div>
 
-      <p className="text-sm text-black/60 dark:text-white/60">
+      <p className="text-xs text-faint">
         {visibles.length} de {filas.length} evento(s). Registro inmutable: se escribe y no se edita.
       </p>
     </div>

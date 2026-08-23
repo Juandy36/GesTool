@@ -11,6 +11,8 @@ import {
   useTable,
 } from "@tanstack/react-table";
 import { comoDdMmAaaa } from "@/lib/fechas";
+import Icono from "@/app/iconos";
+import { btnPrimario, campo as campoBase, error as claseError, etiqueta, tabla, tarjeta, titulo } from "@/app/ui";
 import { registrarEntrada, registrarSalida } from "./actions";
 import { entradaSchema, salidaSchema } from "./schemas";
 
@@ -39,7 +41,7 @@ const helper = createColumnHelper<typeof features, Movimiento>();
 
 const INICIAL = "" as string | undefined;
 
-const campo = "w-full rounded border border-black/20 px-3 py-2 dark:border-white/25";
+const campo = `${campoBase} w-full`;
 
 export default function VistaMovimientos({
   tipo,
@@ -124,16 +126,12 @@ export default function VistaMovimientos({
   const mensajeError = errorCliente ?? error;
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">{esEntrada ? "Entradas" : "Salidas"}</h1>
+    <div className="space-y-5">
+      <h1 className={titulo}>{esEntrada ? "Entradas" : "Salidas"}</h1>
 
-      <form
-        action={formAction}
-        onSubmit={validar}
-        className="grid gap-3 rounded border border-black/10 p-4 sm:grid-cols-2 dark:border-white/15"
-      >
+      <form action={formAction} onSubmit={validar} className={`${tarjeta} grid gap-3 sm:grid-cols-2`}>
         <label className="block space-y-1 sm:col-span-2">
-          <span className="text-sm font-medium">Ítem</span>
+          <span className={etiqueta}>Ítem</span>
           <select name="itemId" defaultValue="" required className={campo}>
             <option value="" disabled>
               Elegir…
@@ -147,7 +145,7 @@ export default function VistaMovimientos({
         </label>
 
         <label className="block space-y-1">
-          <span className="text-sm font-medium">Cantidad</span>
+          <span className={etiqueta}>Cantidad</span>
           <input
             name="cantidad"
             type="number"
@@ -160,30 +158,30 @@ export default function VistaMovimientos({
         </label>
 
         <label className="block space-y-1">
-          <span className="text-sm font-medium">Fecha</span>
+          <span className={etiqueta}>Fecha</span>
           <input name="fecha" type="date" defaultValue={hoy} required className={campo} />
         </label>
 
         {esEntrada ? (
           <>
             <label className="block space-y-1">
-              <span className="text-sm font-medium">Proveedor</span>
+              <span className={etiqueta}>Proveedor</span>
               <input name="proveedor" maxLength={120} required className={campo} />
             </label>
             <label className="block space-y-1">
-              <span className="text-sm font-medium">Quién entrega</span>
+              <span className={etiqueta}>Quién entrega</span>
               <input name="quienEntrega" maxLength={120} required className={campo} />
             </label>
           </>
         ) : (
           <label className="block space-y-1 sm:col-span-2">
-            <span className="text-sm font-medium">Trabajador</span>
+            <span className={etiqueta}>Trabajador</span>
             <input name="trabajador" maxLength={120} required className={campo} />
           </label>
         )}
 
         {mensajeError && (
-          <p role="alert" className="text-sm text-red-600 sm:col-span-2 dark:text-red-400">
+          <p role="alert" className={`${claseError} sm:col-span-2`}>
             {mensajeError}
           </p>
         )}
@@ -191,27 +189,27 @@ export default function VistaMovimientos({
         <button
           type="submit"
           disabled={pendiente || items.length === 0}
-          className="rounded bg-foreground px-4 py-2 font-medium text-background disabled:opacity-50 sm:col-span-2"
+          className={`${btnPrimario} py-2.5 sm:col-span-2`}
         >
           {pendiente ? "Registrando…" : esEntrada ? "Registrar entrada" : "Registrar salida"}
         </button>
 
         {items.length === 0 && (
-          <p className="text-sm text-black/60 sm:col-span-2 dark:text-white/60">
+          <p className="text-xs text-faint sm:col-span-2">
             No hay ítems activos en el catálogo todavía.
           </p>
         )}
       </form>
 
-      <div className="overflow-x-auto rounded border border-black/10 dark:border-white/15">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-black/10 dark:border-white/15">
+      <div className={tabla.marco}>
+        <table className={tabla.base}>
+          <thead className={tabla.encabezado}>
             {table.getHeaderGroups().map((grupo) => (
               <tr key={grupo.id}>
                 {grupo.headers.map((header) => {
                   const orden = header.column.getIsSorted();
                   return (
-                    <th key={header.id} className="px-3 py-2 font-medium">
+                    <th key={header.id} className={tabla.th}>
                       <button
                         type="button"
                         onClick={() => header.column.toggleSorting()}
@@ -229,21 +227,20 @@ export default function VistaMovimientos({
           <tbody>
             {filas.length === 0 ? (
               <tr>
-                <td
-                  colSpan={columns.length}
-                  className="px-3 py-6 text-center text-black/60 dark:text-white/60"
-                >
-                  Todavía no hay {esEntrada ? "entradas" : "salidas"} registradas.
+                <td colSpan={columns.length} className={tabla.vacio}>
+                  <div className="flex flex-col items-center gap-2 text-faint">
+                    <Icono nombre="lista" size={22} grosor={1.6} />
+                    <span className="text-[13px]">
+                      Todavía no hay {esEntrada ? "entradas" : "salidas"} registradas.
+                    </span>
+                  </div>
                 </td>
               </tr>
             ) : (
               filas.map((row) => (
-                <tr
-                  key={row.id}
-                  className="border-b border-black/5 last:border-0 dark:border-white/10"
-                >
+                <tr key={row.id} className={tabla.fila}>
                   {row.getAllCells().map((cell) => (
-                    <td key={cell.id} className="px-3 py-2">
+                    <td key={cell.id} className={tabla.td}>
                       <table.FlexRender cell={cell} />
                     </td>
                   ))}
@@ -254,7 +251,7 @@ export default function VistaMovimientos({
         </table>
       </div>
 
-      <p className="text-sm text-black/60 dark:text-white/60">
+      <p className="text-xs text-faint">
         {movimientos.length} movimiento(s). Histórico inmutable: no se edita ni se borra.
       </p>
     </div>

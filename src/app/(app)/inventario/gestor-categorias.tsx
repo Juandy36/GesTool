@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { btnPrimario, campoChico, error as claseError, campo } from "@/app/ui";
 import { crearCategoria, eliminarCategoria, renombrarCategoria } from "./actions";
 import type { Categoria } from "./tabla";
 
@@ -15,7 +16,7 @@ function FilaCategoria({ categoria }: { categoria: Categoria }) {
   const error = errorRenombrar || errorEliminar;
 
   return (
-    <li className="space-y-1 border-b border-black/10 py-2 dark:border-white/15">
+    <li className="space-y-1 border-b border-border py-2 last:border-0">
       <div className="flex items-center gap-2">
         <form action={accionRenombrar} className="flex flex-1 items-center gap-2">
           <input type="hidden" name="id" value={categoria.id} />
@@ -25,12 +26,12 @@ function FilaCategoria({ categoria }: { categoria: Categoria }) {
             required
             maxLength={80}
             aria-label={`Nombre de ${categoria.nombre}`}
-            className="min-w-0 flex-1 rounded border border-black/20 px-2 py-1 text-sm dark:border-white/25"
+            className={`${campoChico} min-w-0 flex-1`}
           />
           <button
             type="submit"
             disabled={renombrando}
-            className="shrink-0 text-sm underline underline-offset-4 disabled:opacity-50"
+            className="shrink-0 text-xs underline underline-offset-2 disabled:opacity-50"
           >
             Renombrar
           </button>
@@ -41,7 +42,7 @@ function FilaCategoria({ categoria }: { categoria: Categoria }) {
           <button
             type="submit"
             disabled={eliminando}
-            className="shrink-0 text-sm text-red-600 underline underline-offset-4 disabled:opacity-50 dark:text-red-400"
+            className="shrink-0 text-xs text-danger underline underline-offset-2 disabled:opacity-50"
           >
             Eliminar
           </button>
@@ -49,7 +50,7 @@ function FilaCategoria({ categoria }: { categoria: Categoria }) {
       </div>
 
       {error && (
-        <p role="alert" className="text-xs text-red-600 dark:text-red-400">
+        <p role="alert" className="text-xs text-danger">
           {error}
         </p>
       )}
@@ -70,25 +71,25 @@ export default function GestorCategorias({ categorias }: { categorias: Categoria
             maxLength={80}
             placeholder="Nueva categoría"
             aria-label="Nueva categoría"
-            className="min-w-0 flex-1 rounded border border-black/20 px-3 py-2 dark:border-white/25"
+            className={`${campo} min-w-0 flex-1`}
           />
           <button
             type="submit"
             disabled={creando}
-            className="shrink-0 rounded bg-foreground px-3 py-2 text-sm font-medium text-background disabled:opacity-50"
+            className={`${btnPrimario} shrink-0`}
           >
             {creando ? "Creando…" : "Crear"}
           </button>
         </div>
         {error && (
-          <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+          <p role="alert" className={claseError}>
             {error}
           </p>
         )}
       </form>
 
       {categorias.length === 0 ? (
-        <p className="text-sm text-black/60 dark:text-white/60">Todavía no hay categorías.</p>
+        <p className="text-[13px] text-faint">Todavía no hay categorías.</p>
       ) : (
         <ul className="max-h-72 overflow-y-auto">
           {categorias.map((c) => (
