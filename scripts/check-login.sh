@@ -1,10 +1,35 @@
 #!/usr/bin/env bash
 # Check end-to-end del flujo de login contra el dev server (pnpm dev).
-# Deja al admin con la contraseña cambiada: restaurar con `pnpm db:reset`.
+#
+# Autosuficiente: guarda las credenciales del admin, las deja en el estado del
+# seed para poder probar la rotación de verdad, y las restaura al salir — pase,
+# falle o lo corten con Ctrl-C. Así se puede correr dos veces seguidas y en
+# cualquier orden con los otros checks.
 set -u
-BASE=http://localhost:3000
+BASE=${BASE:-http://localhost:3000}
 JAR=$(mktemp)
+SNAP=$(mktemp)
+USUARIO=${SEED_ADMIN_USUARIO:-admin}
+CLAVE=${SEED_ADMIN_PASSWORD:-admin123}
+NUEVA=claveNueva9
 fail=0
+
+cred() { pnpm -s tsx "$(dirname "$0")/credenciales.ts" "$@"; }
+
+if ! cred guardar "$USUARIO" "$SNAP"; then
+  echo "  FALL no se pudo leer al usuario '$USUARIO' (¿corriste 'pnpm db:seed'?)"
+  rm -f "$JAR" "$SNAP"
+  exit 1
+fi
+
+# Se instala recién con el snapshot en mano: restaurar sin él no restauraría nada.
+limpiar() {
+  cred restaurar "$SNAP" || echo "  !! quedaron sin restaurar las credenciales de $USUARIO ($SNAP)"
+  rm -f "$JAR" "$SNAP"
+}
+trap limpiar EXIT INT TERM
+
+cred poner "$USUARIO" "$CLAVE" true
 
 check() { # check <descripcion> <esperado> <obtenido>
   if [[ "$3" == *"$2"* ]]; then echo "  ok   $1"
@@ -32,36 +57,35 @@ cambiar() { # cambiar <actual> <nueva> <confirmacion> -> imprime cuerpo de respu
 }
 
 echo "1. rechazo de credenciales"
-check "password incorrecta rechazada" "error=CredentialsSignin" "$(login admin noesta)"
+check "password incorrecta rechazada" "error=CredentialsSignin" "$(login "$USUARIO" noesta)"
 check "sin sesion tras fallo"          "null"                    "$(sesion)"
-check "usuario inexistente rechazado"  "error=CredentialsSignin" "$(login fantasma admin123)"
+check "usuario inexistente rechazado"  "error=CredentialsSignin" "$(login fantasma "$CLAVE")"
 
 echo "2. login del admin sembrado"
-login admin admin123 >/dev/null
+login "$USUARIO" "$CLAVE" >/dev/null
 check "sesion con rol ADMIN"        '"rol":"ADMIN"'                 "$(sesion)"
 check "marcado para cambiar clave"  '"debeCambiarPassword":true'    "$(sesion)"
 check "dashboard manda a cambiar"   "/cambiar-password" \
   "$(curl -sS -c "$JAR" -b "$JAR" "$BASE/dashboard" -o /dev/null -w '%{redirect_url}')"
 
 echo "3. validaciones del cambio de clave"
-check "rechaza clave corta"        "al menos 8 caracteres"        "$(cambiar admin123 corta corta)"
-check "rechaza confirmacion mala"  "confirmación no coincide"     "$(cambiar admin123 claveNueva9 otraClave9)"
-check "rechaza clave igual"        "distinta de la actual"        "$(cambiar admin123 admin123 admin123)"
-check "rechaza actual incorrecta"  "contraseña actual es incorrecta" "$(cambiar noesta claveNueva9 claveNueva9)"
+check "rechaza clave corta"        "al menos 8 caracteres"        "$(cambiar "$CLAVE" corta corta)"
+check "rechaza confirmacion mala"  "confirmación no coincide"     "$(cambiar "$CLAVE" "$NUEVA" otraClave9)"
+check "rechaza clave igual"        "distinta de la actual"        "$(cambiar "$CLAVE" "$CLAVE" "$CLAVE")"
+check "rechaza actual incorrecta"  "contraseña actual es incorrecta" "$(cambiar noesta "$NUEVA" "$NUEVA")"
 check "sigue marcado"              '"debeCambiarPassword":true'   "$(sesion)"
 
 echo "4. cambio exitoso"
-cambiar admin123 claveNueva9 claveNueva9 >/dev/null
+cambiar "$CLAVE" "$NUEVA" "$NUEVA" >/dev/null
 check "cierra sesion tras cambiar" "null" "$(sesion)"
 
 echo "5. login con la clave nueva"
-check "clave vieja ya no sirve" "error=CredentialsSignin" "$(login admin admin123)"
-login admin claveNueva9 >/dev/null
+check "clave vieja ya no sirve" "error=CredentialsSignin" "$(login "$USUARIO" "$CLAVE")"
+login "$USUARIO" "$NUEVA" >/dev/null
 check "clave nueva entra"        '"rol":"ADMIN"'              "$(sesion)"
 check "ya no exige cambio"       '"debeCambiarPassword":false' "$(sesion)"
 check "dashboard accesible"      "200" \
   "$(curl -sS -c "$JAR" -b "$JAR" "$BASE/dashboard" -o /dev/null -w '%{http_code}')"
 
-rm -f "$JAR"
 [[ $fail -eq 0 ]] && echo "TODO OK" || echo "HAY FALLOS"
 exit $fail

@@ -26,6 +26,40 @@ login() { # login <jar> <usuario> <password>
   curl -sS -c "$1" -b "$1" "$BASE/api/auth/session"
 }
 
+# Claves candidatas, en orden: la que deja este script, la del seed, y la que
+# deja `check-login.sh` cuando se corre antes que este.
+CLAVE=Prueba12345
+CANDIDATAS=("$CLAVE" "${SEED_ADMIN_PASSWORD:-admin123}" claveNueva9)
+
+cambiar() { # cambiar <jar> <actual> <nueva>
+  local html key ref0 ref1
+  html=$(curl -sS -c "$1" -b "$1" "$BASE/cambiar-password")
+  key=$(grep -oE 'name="\$ACTION_KEY" value="[^"]+"' <<<"$html" | sed -E 's/.*value="([^"]+)".*/\1/')
+  ref0=$(grep -oE 'name="\$ACTION_1:0" value="[^"]+"' <<<"$html" | sed -E 's/.*value="([^"]+)".*/\1/' | sed 's/&quot;/"/g')
+  ref1=$(grep -oE 'name="\$ACTION_1:1" value="[^"]+"' <<<"$html" | sed -E 's/.*value="([^"]+)".*/\1/' | sed 's/&quot;/"/g')
+  curl -sS -c "$1" -b "$1" -X POST "$BASE/cambiar-password" \
+    -F "actual=$2" -F "nueva=$3" -F "confirmacion=$3" \
+    -F '$ACTION_REF_1=' -F "\$ACTION_1:0=$ref0" -F "\$ACTION_1:1=$ref1" -F "\$ACTION_KEY=$key" -o /dev/null
+}
+
+# Entra y deja la cuenta lista para navegar. Las cuentas recién sembradas vienen
+# marcadas para cambiar la clave, y con ese flag el guard de (app) redirige todo
+# a /cambiar-password: sin esto no se puede probar ninguna vista.
+preparar() { # preparar <jar> <usuario> -> imprime la sesión
+  local jar=$1 usuario=$2 sesion clave
+  for clave in "${CANDIDATAS[@]}"; do
+    sesion=$(login "$jar" "$usuario" "$clave")
+    [[ "$sesion" == *'"rol"'* ]] || continue
+    if [[ "$sesion" == *'"debeCambiarPassword":true'* ]]; then
+      cambiar "$jar" "$clave" "$CLAVE"
+      sesion=$(login "$jar" "$usuario" "$CLAVE")
+    fi
+    echo "$sesion"
+    return
+  done
+  echo ""
+}
+
 echo "1. la ruta exige sesión"
 anon=$(mktemp)
 check "inventario redirige a login" "/login" \
@@ -35,9 +69,9 @@ check "la exportación responde 401" "401" \
 rm -f "$anon"
 
 echo "2. el admin ve el catálogo"
-sesion=$(login "$ADMIN" admin admin123)
+sesion=$(preparar "$ADMIN" admin)
 if [[ "$sesion" != *'"rol":"ADMIN"'* ]]; then
-  echo "  FALL no se pudo entrar como admin (¿corriste 'pnpm db:seed' y ya cambiaste la clave inicial?)"
+  echo "  FALL no se pudo entrar como admin (¿corriste 'pnpm db:seed'?)"
   exit 1
 fi
 html=$(curl -sS -c "$ADMIN" -b "$ADMIN" "$BASE/inventario")
@@ -66,7 +100,7 @@ check "pesa algo"                  "ok" "$([[ $(wc -c < "$tmpx") -gt 1000 ]] && 
 rm -f "$tmpx"
 
 echo "5. el bodeguero consulta pero no administra"
-sesion=$(login "$BODEGA" bodeguero admin123)
+sesion=$(preparar "$BODEGA" bodeguero)
 if [[ "$sesion" != *'"rol":"BODEGUERO"'* ]]; then
   echo "  -- sin usuario 'bodeguero', se saltan los checks de rol"
 else

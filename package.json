@@ -13,7 +13,8 @@
     "db:studio": "prisma studio",
     "check:login": "bash scripts/check-login.sh",
     "check:inventario": "bash scripts/check-inventario.sh",
-    "check:reglas": "tsx scripts/check-reglas.ts"
+    "check:reglas": "tsx scripts/check-reglas.ts",
+    "check:movimientos": "tsx scripts/check-movimientos.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.1",

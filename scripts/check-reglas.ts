@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import type { Session } from "next-auth";
 import { puedeAdministrar } from "../src/lib/rbac";
+import { comoDdMmAaaa, fechaLocal, instanteLocal } from "../src/lib/fechas";
 import { nivelStock } from "../src/lib/stock";
 
 const sesion = (rol: "ADMIN" | "BODEGUERO"): Session =>
@@ -32,6 +33,17 @@ assert.equal(nivelStock(item(4)), "CRITICO", "justo en el crítico ya es crític
 assert.equal(nivelStock(item(0)), "CRITICO", "sin stock");
 // Crítico gana cuando los umbrales coinciden.
 assert.equal(nivelStock({ stock: 3, umbralMinimo: 3, umbralCritico: 3 }), "CRITICO");
+// --- Fechas locales ---
+// Todo lo que se muestra o se filtra sale del calendario local. Con los
+// componentes en UTC, un movimiento de la noche cae en el día siguiente y
+// "hoy" del dashboard no lo ve: ya pasó una vez en el seed.
+const tarde = new Date(2026, 7, 22, 23, 30);
+assert.equal(fechaLocal(tarde), "2026-08-22", "23:30 sigue siendo el mismo día local");
+assert.equal(instanteLocal(new Date(2026, 7, 22, 21, 5)), "2026-08-22 21:05");
+assert.equal(comoDdMmAaaa("2026-08-22"), "22/08/2026");
+// El filtro de la auditoría compara los primeros 10 caracteres contra un
+// `<input type="date">`, así que el instante tiene que empezar por el día.
+assert.equal(instanteLocal(tarde).slice(0, 10), fechaLocal(tarde));
 
 // --- Toda server action de escritura arranca con el guard de rol ---
 // Barato de mantener y avisa si alguien agrega una acción sin protegerla.
@@ -44,4 +56,4 @@ for (const nombre of exportadas) {
   assert.match(primeraLinea, /soloAdmin\(\)/, `${nombre} no valida el rol al entrar`);
 }
 
-console.log(`OK: RBAC, semáforo de stock y guard en ${exportadas.length} server actions.`);
+console.log(`OK: RBAC, semáforo de stock, fechas y guard en ${exportadas.length} server actions.`);
