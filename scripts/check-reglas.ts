@@ -7,7 +7,7 @@ import { readFileSync } from "node:fs";
 import type { Session } from "next-auth";
 import { puedeAdministrar } from "../src/lib/rbac";
 import { comoDdMmAaaa, fechaLocal, instanteLocal } from "../src/lib/fechas";
-import { nivelStock } from "../src/lib/stock";
+import { nivelStock, porUrgencia } from "../src/lib/stock";
 
 const sesion = (rol: "ADMIN" | "BODEGUERO"): Session =>
   ({
@@ -45,6 +45,21 @@ assert.equal(comoDdMmAaaa("2026-08-22"), "22/08/2026");
 // `<input type="date">`, así que el instante tiene que empezar por el día.
 assert.equal(instanteLocal(tarde).slice(0, 10), fechaLocal(tarde));
 
+// --- Urgencia de reposición ---
+// Los críticos van primero aunque falten pocas unidades; dentro del nivel,
+// mayor faltante. Es el orden del dashboard y del reporte de stock.
+const orden = porUrgencia([
+  { codigo: "bajo-mucho", stock: 50, umbralMinimo: 100, umbralCritico: 10 },
+  { codigo: "critico-poco", stock: 1, umbralMinimo: 3, umbralCritico: 2 },
+  { codigo: "bajo-poco", stock: 9, umbralMinimo: 10, umbralCritico: 1 },
+]);
+assert.deepEqual(
+  orden.map((i) => i.codigo),
+  ["critico-poco", "bajo-mucho", "bajo-poco"],
+  "crítico primero, después mayor faltante",
+);
+assert.equal(orden[1].faltante, 50, "el faltante es mínimo - stock");
+
 // --- Toda server action de escritura arranca con el guard de rol ---
 // Barato de mantener y avisa si alguien agrega una acción sin protegerla.
 const actions = readFileSync(new URL("../src/app/(app)/inventario/actions.ts", import.meta.url), "utf8");
@@ -56,4 +71,4 @@ for (const nombre of exportadas) {
   assert.match(primeraLinea, /soloAdmin\(\)/, `${nombre} no valida el rol al entrar`);
 }
 
-console.log(`OK: RBAC, semáforo de stock, fechas y guard en ${exportadas.length} server actions.`);
+console.log(`OK: RBAC, semáforo de stock, urgencia, fechas y guard en ${exportadas.length} server actions.`);
