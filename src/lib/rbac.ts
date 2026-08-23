@@ -18,3 +18,11 @@ export function puedeAdministrar(session: Session | null): string | null {
 export async function soloAdmin(): Promise<string | null> {
   return puedeAdministrar(await auth());
 }
+
+/**
+ * Id del usuario de la sesión, o `null` si no hay. Para auditar quién hizo la
+ * acción; el control de acceso es `soloAdmin()`, esto no decide nada.
+ */
+export async function usuarioActual(): Promise<string | null> {
+  return (await auth())?.user.id ?? null;
+}

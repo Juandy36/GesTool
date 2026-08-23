@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { auth, signOut } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { auditar } from "@/lib/auditoria";
 
 const schema = z
   .object({
@@ -31,12 +32,16 @@ export async function cambiarPassword(_prev: string | undefined, formData: FormD
   if (!(await bcrypt.compare(parsed.data.actual, usuario.passwordHash)))
     return "La contraseña actual es incorrecta.";
 
-  await prisma.usuario.update({
-    where: { id: usuario.id },
-    data: {
-      passwordHash: await bcrypt.hash(parsed.data.nueva, 10),
-      debeCambiarPassword: false,
-    },
+  const passwordHash = await bcrypt.hash(parsed.data.nueva, 10);
+
+  // Rotación y auditoría en la misma transacción: una credencial que cambia sin
+  // dejar rastro es justo lo que el libro de auditoría existe para impedir.
+  await prisma.$transaction(async (tx) => {
+    await tx.usuario.update({
+      where: { id: usuario.id },
+      data: { passwordHash, debeCambiarPassword: false },
+    });
+    await auditar(tx, "CAMBIO_PASSWORD", `${usuario.nombre} cambió su contraseña.`, usuario.id);
   });
 
   // El flag vive en el JWT: cerrar sesión es la forma simple de refrescarlo.

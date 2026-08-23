@@ -25,6 +25,9 @@ model Usuario {
   activo              Boolean  @default(true)
   creadoEn            DateTime @default(now())
   actualizadoEn       DateTime @updatedAt
+  entradas            Entrada[]
+  salidas             Salida[]
+  auditorias          Auditoria[]
 }
 
 enum TipoItem {
@@ -55,6 +58,70 @@ model Item {
   activo        Boolean   @default(true)
   creadoEn      DateTime  @default(now())
   actualizadoEn DateTime  @updatedAt
+  entradas      Entrada[]
+  salidas       Salida[]
 
   @@index([categoriaId])
+}
+
+/// Libros append-only: un movimiento no se edita ni se borra. El `stock` del
+/// ítem se mueve en la misma transacción que crea el registro.
+model Entrada {
+  id           String   @id @default(cuid())
+  itemId       String
+  item         Item     @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  cantidad     Int
+  fecha        DateTime
+  proveedor    String
+  quienEntrega String
+  usuarioId    String
+  usuario      Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  creadoEn     DateTime @default(now())
+
+  @@index([itemId])
+  @@index([fecha])
+}
+
+model Salida {
+  id         String   @id @default(cuid())
+  itemId     String
+  item       Item     @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  cantidad   Int
+  fecha      DateTime
+  trabajador String
+  usuarioId  String
+  usuario    Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  creadoEn   DateTime @default(now())
+
+  @@index([itemId])
+  @@index([fecha])
+}
+
+enum AccionAuditoria {
+  LOGIN
+  LOGIN_FALLIDO
+  CAMBIO_PASSWORD
+  ITEM_CREADO
+  ITEM_EDITADO
+  ITEM_BAJA
+  CATEGORIA_CREADA
+  CATEGORIA_RENOMBRADA
+  CATEGORIA_ELIMINADA
+  ENTRADA_REGISTRADA
+  SALIDA_REGISTRADA
+}
+
+/// Append-only igual que Entrada/Salida: se escribe y no se toca mas.
+model Auditoria {
+  id        String          @id @default(cuid())
+  accion    AccionAuditoria
+  /// Nullable a proposito: un LOGIN_FALLIDO con usuario inexistente no tiene a quien apuntar.
+  usuarioId String?
+  usuario   Usuario?        @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  /// Linea legible, tal como va a salir en la celda del Excel.
+  detalle   String
+  creadoEn  DateTime        @default(now())
+
+  @@index([usuarioId])
+  @@index([creadoEn])
 }

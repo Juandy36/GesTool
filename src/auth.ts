@@ -4,6 +4,7 @@ import "next-auth/jwt";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { auditar } from "@/lib/auditoria";
 import type { Rol } from "@/generated/prisma/enums";
 
 const credencialesSchema = z.object({
@@ -31,7 +32,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const hash = usuario?.passwordHash ?? "$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinvalidinvalidinv";
         const ok = await bcrypt.compare(parsed.data.password, hash);
 
-        if (!usuario || !usuario.activo || !ok) return null;
+        if (!usuario || !usuario.activo || !ok) {
+          // El motivo solo lo ve un admin en la auditoría, no vuelve al que intenta entrar.
+          const motivo = !usuario ? "usuario inexistente" : !usuario.activo ? "cuenta inactiva" : "contraseña incorrecta";
+          await auditar(prisma, "LOGIN_FALLIDO", `Intento fallido con "${parsed.data.usuario}": ${motivo}.`, usuario?.id);
+          return null;
+        }
+
+        await auditar(prisma, "LOGIN", `Inició sesión ${usuario.nombre} (${usuario.usuario}).`, usuario.id);
 
         return {
           id: usuario.id,
