@@ -14,7 +14,7 @@ export default function CambiarPasswordForm() {
   const [error, formAction, pending] = useActionState(cambiarPassword, undefined);
 
   return (
-    <form action={formAction} className="space-y-3">
+    <form action={formAction} className="space-y-3" suppressHydrationWarning>
       {campos.map((campo) => (
         <label key={campo.name} className="flex flex-col gap-1.5">
           <span className={etiqueta}>{campo.label}</span>
@@ -24,6 +24,7 @@ export default function CambiarPasswordForm() {
             required
             autoComplete={campo.autoComplete}
             className={`${campoBase} w-full`}
+            suppressHydrationWarning
           />
         </label>
       ))}

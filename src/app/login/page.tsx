@@ -10,7 +10,12 @@ export default function LoginPage() {
 
   return (
     <main className={fondoAuth}>
-      <form action={formAction} className={tarjetaAuth}>
+      {/* `suppressHydrationWarning` en el form y en los inputs: el gestor de
+          contraseñas del navegador les escribe un atributo `__gcruniqueid`
+          apenas parsea el HTML, antes de que React hidrate, y el desajuste
+          llena la consola. Es solo acá y en /cambiar-password porque solo
+          marca campos de credenciales. */}
+      <form action={formAction} className={tarjetaAuth} suppressHydrationWarning>
         <div className="mb-6 flex flex-col items-center gap-2.5">
           <span className="flex size-10 items-center justify-center rounded-[10px] bg-invert text-invert-text">
             <Icono nombre="caja" size={22} grosor={2} />
@@ -29,6 +34,7 @@ export default function LoginPage() {
             autoFocus
             placeholder="admin"
             className={`${campo} w-full`}
+            suppressHydrationWarning
           />
         </label>
 
@@ -41,6 +47,7 @@ export default function LoginPage() {
             autoComplete="current-password"
             placeholder="••••••••"
             className={`${campo} w-full`}
+            suppressHydrationWarning
           />
         </label>
 
