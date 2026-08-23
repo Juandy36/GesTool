@@ -19,3 +19,19 @@ export async function auditar(
   await db.auditoria.create({ data: { accion, detalle, usuarioId: usuarioId ?? null } });
 }
 
+/** Cómo se lee cada acción en la tabla de reportes y en el Excel. */
+export const ETIQUETA_ACCION: Record<AccionAuditoria, string> = {
+  LOGIN: "Inicio de sesión",
+  LOGIN_FALLIDO: "Intento fallido",
+  CAMBIO_PASSWORD: "Cambio de contraseña",
+  ITEM_CREADO: "Ítem creado",
+  ITEM_EDITADO: "Ítem editado",
+  ITEM_BAJA: "Ítem dado de baja",
+  CATEGORIA_CREADA: "Categoría creada",
+  CATEGORIA_RENOMBRADA: "Categoría renombrada",
+  CATEGORIA_ELIMINADA: "Categoría eliminada",
+  ENTRADA_REGISTRADA: "Entrada registrada",
+  SALIDA_REGISTRADA: "Salida registrada",
+  USUARIO_CREADO: "Usuario creado",
+  USUARIO_PASSWORD_RESET: "Contraseña restablecida",
+};

@@ -62,13 +62,20 @@ assert.equal(orden[1].faltante, 50, "el faltante es mínimo - stock");
 
 // --- Toda server action de escritura arranca con el guard de rol ---
 // Barato de mantener y avisa si alguien agrega una acción sin protegerla.
-const actions = readFileSync(new URL("../src/app/(app)/inventario/actions.ts", import.meta.url), "utf8");
-const exportadas = [...actions.matchAll(/export async function (\w+)/g)].map((m) => m[1]);
-assert.ok(exportadas.length >= 5, `se esperaban >=5 actions, hay ${exportadas.length}`);
-for (const nombre of exportadas) {
-  const cuerpo = actions.slice(actions.indexOf(`export async function ${nombre}`));
-  const primeraLinea = cuerpo.split("\n").slice(1, 3).join("\n");
-  assert.match(primeraLinea, /soloAdmin\(\)/, `${nombre} no valida el rol al entrar`);
+let acciones = 0;
+for (const modulo of ["inventario", "usuarios"]) {
+  const actions = readFileSync(
+    new URL(`../src/app/(app)/${modulo}/actions.ts`, import.meta.url),
+    "utf8",
+  );
+  const exportadas = [...actions.matchAll(/export async function (\w+)/g)].map((m) => m[1]);
+  assert.ok(exportadas.length >= 2, `${modulo}: se esperaban >=2 actions, hay ${exportadas.length}`);
+  for (const nombre of exportadas) {
+    const cuerpo = actions.slice(actions.indexOf(`export async function ${nombre}`));
+    const primeraLinea = cuerpo.split("\n").slice(1, 3).join("\n");
+    assert.match(primeraLinea, /soloAdmin\(\)/, `${modulo}/${nombre} no valida el rol al entrar`);
+  }
+  acciones += exportadas.length;
 }
 
-console.log(`OK: RBAC, semáforo de stock, urgencia, fechas y guard en ${exportadas.length} server actions.`);
+console.log(`OK: RBAC, semáforo de stock, urgencia y guard en ${acciones} server actions.`);
