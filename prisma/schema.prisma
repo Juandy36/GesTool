@@ -26,3 +26,35 @@ model Usuario {
   creadoEn            DateTime @default(now())
   actualizadoEn       DateTime @updatedAt
 }
+
+enum TipoItem {
+  MATERIAL
+  HERRAMIENTA
+}
+
+model Categoria {
+  id            String   @id @default(cuid())
+  nombre        String   @unique
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+  items         Item[]
+}
+
+/// El `stock` nunca se edita a mano: solo cambia al registrar una Entrada o
+/// una Salida. Dar de baja es lógico (`activo = false`), nunca un delete.
+model Item {
+  id            String    @id @default(cuid())
+  codigo        String    @unique
+  nombre        String
+  tipo          TipoItem  @default(MATERIAL)
+  categoriaId   String
+  categoria     Categoria @relation(fields: [categoriaId], references: [id], onDelete: Restrict)
+  stock         Int       @default(0)
+  umbralMinimo  Int       @default(0)
+  umbralCritico Int       @default(0)
+  activo        Boolean   @default(true)
+  creadoEn      DateTime  @default(now())
+  actualizadoEn DateTime  @updatedAt
+
+  @@index([categoriaId])
+}

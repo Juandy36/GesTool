@@ -16,25 +16,40 @@ por sección.
 | ORM / DB | Prisma |
 | Autenticación | NextAuth.js + bcryptjs |
 | Validación | Zod |
-| Exportación Excel | ExcelJS / XLSX |
+| Tabla de datos | TanStack Table v9 |
+| Exportación Excel | ExcelJS |
 | Package manager | pnpm (obligatorio) |
 
 ## Requisitos previos
 
 - Node.js 20+
 - pnpm (`corepack enable` o `npm i -g pnpm`)
-- Base de datos (Postgres recomendado)
+- PostgreSQL corriendo en local
 
 ## Instalación y ejecución local
 
 ```bash
 pnpm install
-cp .env.example .env      # completar DATABASE_URL, NEXTAUTH_SECRET, etc.
-pnpm dlx prisma migrate dev
+cp .env.example .env      # completar DATABASE_URL y AUTH_SECRET
+createdb gestool          # o crearla desde pgAdmin / psql
+pnpm db:migrate           # aplica las migraciones
+pnpm db:seed              # admin inicial + catálogo de ejemplo
 pnpm dev
 ```
 
-La app queda disponible en `http://localhost:3000`.
+La app queda disponible en `http://localhost:3000`. El primer acceso es con el
+usuario del seed (`admin` por defecto), que obliga a cambiar la contraseña.
+
+### Checks
+
+```bash
+pnpm check:reglas         # RBAC y semáforo de stock, sin servidor
+pnpm check:login          # login end-to-end, con `pnpm dev` arriba
+pnpm check:inventario     # inventario end-to-end, con `pnpm dev` arriba
+```
+
+Los dos últimos son scripts `.sh`: en Windows correrlos desde **Git Bash**, no
+desde PowerShell.
 
 > Este proyecto usa **pnpm exclusivamente**. No usar `npm` ni `yarn`, y no
 > versionar `package-lock.json` ni `yarn.lock`.

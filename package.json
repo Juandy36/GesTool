@@ -11,12 +11,16 @@
     "db:seed": "prisma db seed",
     "db:reset": "prisma migrate reset --force",
     "db:studio": "prisma studio",
-    "check:login": "bash scripts/check-login.sh"
+    "check:login": "bash scripts/check-login.sh",
+    "check:inventario": "bash scripts/check-inventario.sh",
+    "check:reglas": "tsx scripts/check-reglas.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
+    "@tanstack/react-table": "^9.1.2",
     "bcryptjs": "^3.0.3",
+    "exceljs": "^4.4.0",
     "next": "16.3.0",
     "next-auth": "5.0.0-beta.32",
     "react": "19.2.8",
