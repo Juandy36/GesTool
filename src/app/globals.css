@@ -1,8 +1,18 @@
 @import "tailwindcss";
 
+/* next-themes conmuta la clase `.dark` en <html>. Sin esta línea, los ~54
+   usos de `dark:` seguirían a `prefers-color-scheme` y el toggle no haría
+   nada visible: en Tailwind v4 ese es el comportamiento por defecto. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
+}
+
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
 }
 
 @theme inline {
@@ -12,15 +22,8 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
 }
