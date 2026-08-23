@@ -2,6 +2,7 @@
 
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { auditar } from "@/lib/auditoria";
 import { prisma } from "@/lib/prisma";
 import { soloAdmin, usuarioActual } from "@/lib/rbac";
@@ -79,4 +80,6 @@ export async function restablecerPassword(_prev: string | undefined, formData: F
   }
 
   revalidatePath("/usuarios");
+  // El formulario está en /usuarios/<id>/restablecer: al terminar se vuelve a la lista.
+  redirect("/usuarios");
 }

@@ -1,59 +1,57 @@
 "use client";
 
 import { useActionState } from "react";
+import Icono from "@/app/iconos";
+import { btnPrimario, campo, error as claseError, etiqueta, fondoAuth, tarjetaAuth } from "@/app/ui";
 import { iniciarSesion } from "./actions";
 
 export default function LoginPage() {
   const [error, formAction, pending] = useActionState(iniciarSesion, undefined);
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-4">
-      <form
-        action={formAction}
-        className="w-full max-w-sm space-y-4 rounded-lg border border-black/10 p-6 dark:border-white/15"
-      >
-        <div>
-          <h1 className="text-2xl font-semibold">GesTool</h1>
-          <p className="text-sm text-black/60 dark:text-white/60">
-            Ingresa con tu usuario y contraseña.
-          </p>
+    <main className={fondoAuth}>
+      <form action={formAction} className={tarjetaAuth}>
+        <div className="mb-6 flex flex-col items-center gap-2.5">
+          <span className="flex size-10 items-center justify-center rounded-[10px] bg-invert text-invert-text">
+            <Icono nombre="caja" size={22} grosor={2} />
+          </span>
+          <span className="text-base font-semibold">GesTool</span>
+          <span className="text-[12.5px] text-muted">Ingresa con tu usuario y contraseña</span>
         </div>
 
-        <label className="block space-y-1">
-          <span className="text-sm font-medium">Usuario</span>
+        <label className="mb-3 flex flex-col gap-1.5">
+          <span className={etiqueta}>Usuario</span>
           <input
             name="usuario"
             type="text"
             required
             autoComplete="username"
             autoFocus
-            className="w-full rounded border border-black/20 px-3 py-2 dark:border-white/25"
+            placeholder="admin"
+            className={`${campo} w-full`}
           />
         </label>
 
-        <label className="block space-y-1">
-          <span className="text-sm font-medium">Contraseña</span>
+        <label className="mb-5 flex flex-col gap-1.5">
+          <span className={etiqueta}>Contraseña</span>
           <input
             name="password"
             type="password"
             required
             autoComplete="current-password"
-            className="w-full rounded border border-black/20 px-3 py-2 dark:border-white/25"
+            placeholder="••••••••"
+            className={`${campo} w-full`}
           />
         </label>
 
         {error && (
-          <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+          <p role="alert" className={`${claseError} mb-3`}>
             {error}
           </p>
         )}
 
-        <button
-          type="submit"
-          disabled={pending}
-          className="w-full rounded bg-foreground px-4 py-2 font-medium text-background disabled:opacity-50"
-        >
-          {pending ? "Entrando…" : "Entrar"}
+        <button type="submit" disabled={pending} className={`${btnPrimario} w-full py-2.5`}>
+          {pending ? "Entrando…" : "Ingresar"}
         </button>
       </form>
     </main>

@@ -88,7 +88,7 @@ check "botón nuevo ítem"   "Nuevo ítem"       "$html"
 check "botón categorías"   "Categorías"       "$html"
 check "acción editar"      "Editar"           "$html"
 check "acción dar de baja" "Dar de baja"      "$html"
-check "botón exportar"     "Exportar a Excel" "$html"
+check "botón exportar"     "/api/inventario/export" "$html"
 
 echo "4. la exportación entrega un xlsx"
 tmpx=$(mktemp)
@@ -106,7 +106,7 @@ if [[ "$sesion" != *'"rol":"BODEGUERO"'* ]]; then
 else
   htmlb=$(curl -sS -c "$BODEGA" -b "$BODEGA" "$BASE/inventario")
   check    "ve el catálogo"           "CBL-001"           "$htmlb"
-  check    "puede exportar"           "Exportar a Excel"  "$htmlb"
+  check    "puede exportar"           "/api/inventario/export"  "$htmlb"
   check_no "sin botón de nuevo ítem"  "Nuevo ítem"        "$htmlb"
   check_no "sin gestión de categorías" "Categorías"       "$htmlb"
   check_no "sin acción de editar"     "Editar"            "$htmlb"

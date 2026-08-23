@@ -31,15 +31,15 @@ export default function Modal({
     <dialog
       ref={ref}
       onClose={onCerrar}
-      className="w-full max-w-md rounded-lg bg-background p-6 text-foreground backdrop:bg-black/50"
+      className="w-full max-w-md rounded-xl border border-border bg-surface p-6 text-text backdrop:bg-black/50"
     >
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold">{titulo}</h2>
+        <h2 className="text-[15px] font-semibold">{titulo}</h2>
         <button
           type="button"
           onClick={onCerrar}
           aria-label="Cerrar"
-          className="text-black/50 hover:text-black dark:text-white/50 dark:hover:text-white"
+          className="text-faint hover:text-text"
         >
           ✕
         </button>

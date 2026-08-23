@@ -4,6 +4,7 @@ import { instanteLocal } from "@/lib/fechas";
 import { prisma } from "@/lib/prisma";
 import { soloAdmin } from "@/lib/rbac";
 import { enAlerta, porUrgencia } from "@/lib/stock";
+import { subtitulo, tabla, titulo } from "@/app/ui";
 import BadgeStock from "../badge-stock";
 import TablaAuditoria, { type FilaAuditoria } from "./tabla-auditoria";
 
@@ -46,51 +47,53 @@ export default async function ReportesPage() {
   }));
 
   return (
-    <div className="space-y-8">
-      <h1 className="text-2xl font-semibold">Reportes</h1>
+    <div className="space-y-7">
+      <h1 className={titulo}>Reportes</h1>
 
       <section className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="font-semibold">Stock bajo mínimo</h2>
-          <Link href="/inventario" className="text-sm underline underline-offset-4">
+        <div className="flex flex-wrap items-center justify-between gap-2.5">
+          <h2 className={subtitulo}>Stock bajo mínimo</h2>
+          <Link href="/inventario" className="text-xs underline underline-offset-[3px]">
             Ir al inventario →
           </Link>
         </div>
 
-        <div className="overflow-x-auto rounded border border-black/10 dark:border-white/15">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-black/10 dark:border-white/15">
+        <div className={tabla.marco}>
+          <table className={tabla.base}>
+            <thead className={tabla.encabezado}>
               <tr>
-                <th className="px-3 py-2 font-medium">Nivel</th>
-                <th className="px-3 py-2 font-medium">Código</th>
-                <th className="px-3 py-2 font-medium">Ítem</th>
-                <th className="px-3 py-2 font-medium">Categoría</th>
-                <th className="px-3 py-2 font-medium">Stock</th>
-                <th className="px-3 py-2 font-medium">Mínimo</th>
-                <th className="px-3 py-2 font-medium">Crítico</th>
-                <th className="px-3 py-2 font-medium">Faltante</th>
+                <th className={tabla.th}>Nivel</th>
+                <th className={tabla.th}>Código</th>
+                <th className={tabla.th}>Ítem</th>
+                <th className={tabla.th}>Categoría</th>
+                <th className={tabla.th}>Stock</th>
+                <th className={tabla.th}>Mínimo</th>
+                <th className={tabla.th}>Crítico</th>
+                <th className={tabla.th}>Faltante</th>
               </tr>
             </thead>
             <tbody>
               {reposicion.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-3 py-6 text-center text-black/60 dark:text-white/60">
-                    Nada por reponer: todos los ítems están sobre su mínimo.
+                  <td colSpan={8} className={tabla.vacio}>
+                    <span className="text-[13px] text-faint">
+                      Nada por reponer: todos los ítems están sobre su mínimo.
+                    </span>
                   </td>
                 </tr>
               ) : (
                 reposicion.map((item) => (
-                  <tr key={item.id} className="border-b border-black/5 last:border-0 dark:border-white/10">
-                    <td className="px-3 py-2">
+                  <tr key={item.id} className={tabla.fila}>
+                    <td className={tabla.td}>
                       <BadgeStock nivel={item.nivel} />
                     </td>
-                    <td className="px-3 py-2 font-medium">{item.codigo}</td>
-                    <td className="px-3 py-2">{item.nombre}</td>
-                    <td className="px-3 py-2">{item.categoria.nombre}</td>
-                    <td className="px-3 py-2">{item.stock}</td>
-                    <td className="px-3 py-2">{item.umbralMinimo}</td>
-                    <td className="px-3 py-2">{item.umbralCritico}</td>
-                    <td className="px-3 py-2 font-medium">{item.faltante}</td>
+                    <td className={`${tabla.td} font-medium`}>{item.codigo}</td>
+                    <td className={tabla.td}>{item.nombre}</td>
+                    <td className={tabla.td}>{item.categoria.nombre}</td>
+                    <td className={tabla.td}>{item.stock}</td>
+                    <td className={tabla.td}>{item.umbralMinimo}</td>
+                    <td className={tabla.td}>{item.umbralCritico}</td>
+                    <td className={`${tabla.td} font-medium`}>{item.faltante}</td>
                   </tr>
                 ))
               )}
@@ -100,9 +103,9 @@ export default async function ReportesPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="font-semibold">Registro de auditoría</h2>
+        <h2 className={subtitulo}>Registro de auditoría</h2>
         {sinAuditoria ? (
-          <p className="text-sm text-black/60 dark:text-white/60">{sinAuditoria}</p>
+          <p className="text-[13px] text-faint">{sinAuditoria}</p>
         ) : (
           <TablaAuditoria filas={filas} />
         )}

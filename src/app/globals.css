@@ -1,29 +1,90 @@
 @import "tailwindcss";
 
-/* next-themes conmuta la clase `.dark` en <html>. Sin esta línea, los ~54
-   usos de `dark:` seguirían a `prefers-color-scheme` y el toggle no haría
-   nada visible: en Tailwind v4 ese es el comportamiento por defecto. */
+/* next-themes conmuta la clase `.dark` en <html>. Sin esta línea, `dark:`
+   seguiría a `prefers-color-scheme` y el toggle no haría nada visible: en
+   Tailwind v4 ese es el comportamiento por defecto. */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/**
+ * Paleta del rediseño. Con los dos temas definidos acá, los componentes usan
+ * un solo token (`bg-surface`, `text-muted`, `border-border`) en vez del par
+ * `algo dark:otra-cosa` repetido en cada clase.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-alt: #f7f7f8;
+  --border: rgba(0, 0, 0, 0.09);
+  --border-strong: rgba(0, 0, 0, 0.16);
+  --text: #18181a;
+  --muted: #6b6b70;
+  --faint: #96969b;
+  /* Par de alto contraste para botones primarios y el link activo del nav. */
+  --invert: #18181a;
+  --invert-text: #ffffff;
+  --ok: #1c7a41;
+  --ok-soft: #e9f7ee;
+  --ok-line: #c6ead2;
+  --warn: #93611a;
+  --warn-soft: #fdf2dc;
+  --warn-line: #f2ddab;
+  --danger: #b3261e;
+  --danger-soft: #fdecea;
+  --danger-line: #f6cdc9;
 }
 
 .dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --bg: #0b0b0c;
+  --surface: #151516;
+  --surface-alt: #1a1a1c;
+  --border: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --text: #f2f2f3;
+  --muted: #a1a1a6;
+  --faint: #77777c;
+  --invert: #f2f2f3;
+  --invert-text: #0b0b0c;
+  --ok: #5fce8f;
+  --ok-soft: #122a1c;
+  --ok-line: #1e4a30;
+  --warn: #e8b04b;
+  --warn-soft: #2e2408;
+  --warn-line: #4d3d10;
+  --danger: #f0837a;
+  --danger-soft: #331313;
+  --danger-line: #4a1c1c;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-alt: var(--surface-alt);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-invert: var(--invert);
+  --color-invert-text: var(--invert-text);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-ok-line: var(--ok-line);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-warn-line: var(--warn-line);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-line: var(--danger-line);
+  --font-sans: var(--font-inter);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg);
+  color: var(--text);
   font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Los inputs heredan el color del tema en vez del gris del navegador. */
+::placeholder {
+  color: var(--faint);
 }

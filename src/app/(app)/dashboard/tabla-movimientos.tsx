@@ -2,6 +2,8 @@
 
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { comoDdMmAaaa } from "@/lib/fechas";
+import Icono from "@/app/iconos";
+import { tabla } from "@/app/ui";
 
 /** `fecha` viaja como ISO `yyyy-mm-dd`, igual que en el histórico: sin zona horaria. */
 export type MovimientoGlobal = {
@@ -25,10 +27,8 @@ const columns = helper.columns([
       const entrada = getValue() === "ENTRADA";
       return (
         <span
-          className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-            entrada
-              ? "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300"
-              : "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300"
+          className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
+            entrada ? "bg-ok-soft text-ok" : "bg-danger-soft text-danger"
           }`}
         >
           {entrada ? "Entrada" : "Salida"}
@@ -50,13 +50,13 @@ export default function TablaMovimientos({ filas }: { filas: MovimientoGlobal[] 
   const table = useTable({ features, columns, data: filas });
 
   return (
-    <div className="overflow-x-auto rounded border border-black/10 dark:border-white/15">
-      <table className="w-full text-left text-sm">
-        <thead className="border-b border-black/10 dark:border-white/15">
+    <div className={tabla.marco}>
+      <table className={tabla.base}>
+        <thead className={tabla.encabezado}>
           {table.getHeaderGroups().map((grupo) => (
             <tr key={grupo.id}>
               {grupo.headers.map((header) => (
-                <th key={header.id} className="px-3 py-2 font-medium">
+                <th key={header.id} className={tabla.th}>
                   <table.FlexRender header={header} />
                 </th>
               ))}
@@ -66,18 +66,18 @@ export default function TablaMovimientos({ filas }: { filas: MovimientoGlobal[] 
         <tbody>
           {filas.length === 0 ? (
             <tr>
-              <td
-                colSpan={columns.length}
-                className="px-3 py-6 text-center text-black/60 dark:text-white/60"
-              >
-                Todavía no hay movimientos registrados.
+              <td colSpan={columns.length} className={tabla.vacio}>
+                <div className="flex flex-col items-center gap-2 text-faint">
+                  <Icono nombre="lista" size={22} grosor={1.6} />
+                  <span className="text-[13px]">Todavía no hay movimientos registrados.</span>
+                </div>
               </td>
             </tr>
           ) : (
             table.getRowModel().rows.map((row) => (
-              <tr key={row.id} className="border-b border-black/5 last:border-0 dark:border-white/10">
+              <tr key={row.id} className={tabla.fila}>
                 {row.getAllCells().map((cell) => (
-                  <td key={cell.id} className="px-3 py-2">
+                  <td key={cell.id} className={tabla.td}>
                     <table.FlexRender cell={cell} />
                   </td>
                 ))}

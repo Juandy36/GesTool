@@ -1,8 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { comoDdMmAaaa } from "@/lib/fechas";
-import { crearUsuario, restablecerPassword } from "./actions";
+import Icono from "@/app/iconos";
+import { btnPrimario, campo as campoBase, error as claseError, etiqueta, tabla, titulo } from "@/app/ui";
+import { crearUsuario } from "./actions";
 
 export type FilaUsuario = {
   id: string;
@@ -16,8 +19,8 @@ export type FilaUsuario = {
 
 const INICIAL = "" as string | undefined;
 
-const campo = "w-full rounded border border-black/20 px-3 py-2 dark:border-white/25";
-const boton = "rounded bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-50";
+const campo = `${campoBase} w-full`;
+const boton = btnPrimario;
 
 /**
  * Los dos formularios van en un `<details>` en vez de un modal: el navegador ya
@@ -27,7 +30,7 @@ const boton = "rounded bg-foreground px-4 py-2 text-sm font-medium text-backgrou
 function Aviso({ mensaje }: { mensaje?: string }) {
   if (!mensaje) return null;
   return (
-    <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+    <p role="alert" className={claseError}>
       {mensaje}
     </p>
   );
@@ -37,22 +40,25 @@ function FormularioNuevo() {
   const [error, accion, pendiente] = useActionState(crearUsuario, INICIAL);
 
   return (
-    <details className="rounded border border-black/10 dark:border-white/15">
-      <summary className="cursor-pointer px-4 py-3 font-medium">Nuevo usuario</summary>
+    <details className="rounded-[10px] border border-border bg-surface">
+      <summary className="flex cursor-pointer items-center gap-2 px-4 py-3 text-[13px] font-medium">
+        <Icono nombre="mas" size={14} grosor={2.2} />
+        Nuevo usuario
+      </summary>
 
-      <form action={accion} className="grid gap-3 border-t border-black/10 p-4 sm:grid-cols-2 dark:border-white/15">
+      <form action={accion} className="grid gap-3 border-t border-border p-4 sm:grid-cols-2">
         <label className="block space-y-1">
-          <span className="text-sm font-medium">Usuario</span>
+          <span className={etiqueta}>Usuario</span>
           <input name="usuario" required minLength={3} maxLength={40} autoComplete="off" className={campo} />
         </label>
 
         <label className="block space-y-1">
-          <span className="text-sm font-medium">Nombre</span>
+          <span className={etiqueta}>Nombre</span>
           <input name="nombre" required maxLength={120} className={campo} />
         </label>
 
         <label className="block space-y-1">
-          <span className="text-sm font-medium">Rol</span>
+          <span className={etiqueta}>Rol</span>
           <select name="rol" defaultValue="BODEGUERO" className={campo}>
             <option value="BODEGUERO">Bodeguero</option>
             <option value="ADMIN">Administrador</option>
@@ -60,7 +66,7 @@ function FormularioNuevo() {
         </label>
 
         <label className="block space-y-1">
-          <span className="text-sm font-medium">Contraseña inicial</span>
+          <span className={etiqueta}>Contraseña inicial</span>
           {/* `type="text"` a propósito: el admin la anota y se la entrega. El
               dueño de la cuenta la cambia en el primer inicio de sesión. */}
           <input name="password" type="text" required minLength={8} autoComplete="off" className={campo} />
@@ -79,40 +85,22 @@ function FormularioNuevo() {
 }
 
 function FilaUsuario({ usuario }: { usuario: FilaUsuario }) {
-  const [error, accion, pendiente] = useActionState(restablecerPassword, INICIAL);
-
   return (
-    <tr className="border-b border-black/5 align-top last:border-0 dark:border-white/10">
-      <td className="px-3 py-2">{usuario.nombre}</td>
-      <td className="px-3 py-2">{usuario.usuario}</td>
-      <td className="px-3 py-2">{usuario.rol === "ADMIN" ? "Administrador" : "Bodeguero"}</td>
-      <td className="px-3 py-2">{comoDdMmAaaa(usuario.creadoEn)}</td>
-      <td className="px-3 py-2 text-black/60 dark:text-white/60">
+    <tr className={tabla.fila}>
+      <td className={tabla.td}>{usuario.nombre}</td>
+      <td className={tabla.td}>{usuario.usuario}</td>
+      <td className={tabla.td}>{usuario.rol === "ADMIN" ? "Administrador" : "Bodeguero"}</td>
+      <td className={tabla.td}>{comoDdMmAaaa(usuario.creadoEn)}</td>
+      <td className={`${tabla.td} text-muted`}>
         {!usuario.activo ? "Inactivo" : usuario.debeCambiarPassword ? "Debe cambiar clave" : "Activo"}
       </td>
-      <td className="px-3 py-2">
-        <details>
-          <summary className="cursor-pointer underline underline-offset-4">
-            Restablecer contraseña
-          </summary>
-          <form action={accion} className="mt-2 space-y-2">
-            <input type="hidden" name="id" value={usuario.id} />
-            <input
-              name="password"
-              type="text"
-              required
-              minLength={8}
-              autoComplete="off"
-              placeholder="Nueva contraseña"
-              aria-label={`Nueva contraseña de ${usuario.nombre}`}
-              className={campo}
-            />
-            <Aviso mensaje={error} />
-            <button type="submit" disabled={pendiente} className={boton}>
-              {pendiente ? "Restableciendo…" : "Restablecer"}
-            </button>
-          </form>
-        </details>
+      <td className={tabla.td}>
+        <Link
+          href={`/usuarios/${usuario.id}/restablecer`}
+          className="text-xs text-muted underline underline-offset-2 hover:text-text"
+        >
+          Restablecer contraseña
+        </Link>
       </td>
     </tr>
   );
@@ -121,20 +109,20 @@ function FilaUsuario({ usuario }: { usuario: FilaUsuario }) {
 export default function GestionUsuarios({ usuarios }: { usuarios: FilaUsuario[] }) {
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Usuarios</h1>
+      <h1 className={titulo}>Usuarios</h1>
 
       <FormularioNuevo />
 
-      <div className="overflow-x-auto rounded border border-black/10 dark:border-white/15">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-black/10 dark:border-white/15">
+      <div className={tabla.marco}>
+        <table className={tabla.base}>
+          <thead className={tabla.encabezado}>
             <tr>
-              <th className="px-3 py-2 font-medium">Nombre</th>
-              <th className="px-3 py-2 font-medium">Usuario</th>
-              <th className="px-3 py-2 font-medium">Rol</th>
-              <th className="px-3 py-2 font-medium">Alta</th>
-              <th className="px-3 py-2 font-medium">Estado</th>
-              <th className="px-3 py-2 font-medium">Acciones</th>
+              <th className={tabla.th}>Nombre</th>
+              <th className={tabla.th}>Usuario</th>
+              <th className={tabla.th}>Rol</th>
+              <th className={tabla.th}>Alta</th>
+              <th className={tabla.th}>Estado</th>
+              <th className={tabla.th}>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -145,7 +133,7 @@ export default function GestionUsuarios({ usuarios }: { usuarios: FilaUsuario[] 
         </table>
       </div>
 
-      <p className="text-sm text-black/60 dark:text-white/60">
+      <p className="text-xs text-faint">
         Toda contraseña que pone un administrador es de un solo uso: el dueño de la cuenta debe
         cambiarla al entrar.
       </p>

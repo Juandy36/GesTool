@@ -7,7 +7,7 @@ export default async function UsuariosPage() {
   // El sidebar ya esconde el link para el bodeguero, pero esconder no es
   // control de acceso: la página se protege igual, y las actions otra vez.
   const denegado = await soloAdmin();
-  if (denegado) return <p className="text-red-600 dark:text-red-400">{denegado}</p>;
+  if (denegado) return <p className="text-[13px] text-danger">{denegado}</p>;
 
   const usuarios = await prisma.usuario.findMany({
     orderBy: [{ activo: "desc" }, { nombre: "asc" }],
