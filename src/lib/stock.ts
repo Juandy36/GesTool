@@ -42,10 +42,32 @@ export async function descontarStock(
 /**
  * Ítems activos en alerta: los que el semáforo marca BAJO o CRITICO, o sea
  * `stock <= umbralMinimo`. Es la misma frontera que `nivelStock`, escrita como
- * comparación entre columnas para contarlos sin traerlos todos.
+ * comparación entre columnas para no traerlos todos a memoria.
+ *
+ * Va como filtro y no como consulta armada porque el header solo los cuenta y
+ * el dashboard los lista: una sola definición de la frontera para los dos.
  */
+export function enAlerta(db: Pick<Prisma.TransactionClient, "item">): Prisma.ItemWhereInput {
+  return { activo: true, stock: { lte: db.item.fields.umbralMinimo } };
+}
+
 export async function contarBajoMinimo(db: Pick<Prisma.TransactionClient, "item">) {
-  return db.item.count({
-    where: { activo: true, stock: { lte: db.item.fields.umbralMinimo } },
-  });
+  return db.item.count({ where: enAlerta(db) });
+}
+
+/**
+ * Ítems en alerta ordenados por urgencia de reposición: los críticos primero
+ * aunque falten pocas unidades (están por quedarse en cero) y dentro de cada
+ * nivel, mayor faltante hasta el mínimo. Va en JS y no en SQL porque el
+ * faltante es una resta entre columnas, y son los ítems en alerta nomás.
+ */
+export function porUrgencia<T extends { stock: number; umbralMinimo: number; umbralCritico: number }>(
+  items: T[],
+) {
+  return items
+    .map((item) => ({ ...item, nivel: nivelStock(item), faltante: item.umbralMinimo - item.stock }))
+    .sort(
+      (a, b) =>
+        Number(b.nivel === "CRITICO") - Number(a.nivel === "CRITICO") || b.faltante - a.faltante,
+    );
 }

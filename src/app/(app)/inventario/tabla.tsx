@@ -15,7 +15,8 @@ import {
   tableFeatures,
   useTable,
 } from "@tanstack/react-table";
-import { ETIQUETA_NIVEL, type NivelStock } from "@/lib/stock";
+import { type NivelStock } from "@/lib/stock";
+import BadgeStock from "../badge-stock";
 import { darDeBajaItem } from "./actions";
 import FormularioItem from "./formulario-item";
 import GestorCategorias from "./gestor-categorias";
@@ -47,20 +48,6 @@ const features = tableFeatures({
 });
 
 const helper = createColumnHelper<typeof features, Fila>();
-
-const COLOR_NIVEL: Record<NivelStock, string> = {
-  CRITICO: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300",
-  BAJO: "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300",
-  NORMAL: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300",
-};
-
-function BadgeStock({ nivel }: { nivel: NivelStock }) {
-  return (
-    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${COLOR_NIVEL[nivel]}`}>
-      {ETIQUETA_NIVEL[nivel]}
-    </span>
-  );
-}
 
 function BotonBaja({ item }: { item: Fila }) {
   const [error, accion, pendiente] = useActionState(darDeBajaItem, "" as string | undefined);
