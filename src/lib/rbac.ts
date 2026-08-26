@@ -28,6 +28,11 @@ export function puedeAdministrar(session: Session | null): string | null {
  *
  * `cache()` la memoiza por request: las actions que llaman a `soloAdmin()` y
  * después a `usuarioActual()` pagan una sola consulta.
+ *
+ * Ojo: no mira `debeCambiarPassword` a propósito. El guard de `(app)/layout.tsx`
+ * necesita distinguir "no hay sesión" (va a /login) de "falta cambiar la clave"
+ * (va a /cambiar-password), y `/cambiar-password` sirve justo a quien tiene el
+ * flag puesto. Para todo lo demás está `sesionOperativa()`.
  */
 export const sesionViva = cache(async (): Promise<Session | null> => {
   const session = await auth();
@@ -41,18 +46,35 @@ export const sesionViva = cache(async (): Promise<Session | null> => {
 });
 
 /**
+ * Sesión viva que además ya pasó el cambio de contraseña obligatorio.
+ *
+ * El flag se forzaba en un solo lugar, `(app)/layout.tsx`, y los endpoints de
+ * `/api/**` viven fuera de ese grupo de rutas: una cuenta recién creada, con la
+ * clave de un solo uso que el admin anotó en un papel, se bajaba el inventario
+ * entero — y el libro de auditoría, si era ADMIN — sin haberla cambiado nunca.
+ * Vale también para las server actions: por la UI no se llega con el flag
+ * puesto, pero por un POST armado a mano sí.
+ *
+ * El flag viaja en el JWT, así que esto no agrega ninguna consulta.
+ */
+export async function sesionOperativa(): Promise<Session | null> {
+  const session = await sesionViva();
+  return session && !session.user.debeCambiarPassword ? session : null;
+}
+
+/**
  * Guard de rol para server actions. Se valida siempre en el servidor: esconder
  * el botón en la UI no es control de acceso.
  */
 export async function soloAdmin(): Promise<string | null> {
-  return puedeAdministrar(await sesionViva());
+  return puedeAdministrar(await sesionOperativa());
 }
 
 /**
  * Id del usuario de la sesión, o `null` si el token ya no corresponde a una
- * cuenta viva. Para auditar quién hizo la acción; el control de acceso es
- * `soloAdmin()`, esto no decide nada.
+ * cuenta viva y en condiciones de operar. Para auditar quién hizo la acción; el
+ * control de acceso es `soloAdmin()`, esto no decide nada.
  */
 export async function usuarioActual(): Promise<string | null> {
-  return (await sesionViva())?.user.id ?? null;
+  return (await sesionOperativa())?.user.id ?? null;
 }

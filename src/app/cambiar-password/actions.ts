@@ -2,9 +2,10 @@
 
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { auth, signOut } from "@/auth";
+import { signOut } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { auditar } from "@/lib/auditoria";
+import { sesionViva } from "@/lib/rbac";
 
 const schema = z
   .object({
@@ -20,14 +21,19 @@ const schema = z
   });
 
 export async function cambiarPassword(_prev: string | undefined, formData: FormData) {
-  const session = await auth();
+  // `sesionViva()` y no `auth()`: revalida contra la base que la cuenta siga
+  // activa, que es lo que el JWT no hace solo. Tampoco `sesionOperativa()`:
+  // acá `debeCambiarPassword` está puesto a propósito, es a quien esta
+  // pantalla existe para atender.
+  const session = await sesionViva();
   if (!session) return "Sesión expirada. Vuelve a iniciar sesión.";
 
   const parsed = schema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return parsed.error.issues[0].message;
 
+  // `sesionViva()` ya confirmó que la cuenta está activa; esto solo trae el hash.
   const usuario = await prisma.usuario.findUnique({ where: { id: session.user.id } });
-  if (!usuario || !usuario.activo) return "Sesión expirada. Vuelve a iniciar sesión.";
+  if (!usuario) return "Sesión expirada. Vuelve a iniciar sesión.";
 
   if (!(await bcrypt.compare(parsed.data.actual, usuario.passwordHash)))
     return "La contraseña actual es incorrecta.";

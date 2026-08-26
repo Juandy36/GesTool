@@ -24,9 +24,14 @@ fi
 
 # Se instala recién con el snapshot en mano: restaurar sin él no restauraría nada.
 FANTASMA=qa.fantasma
+# Nombre distinto por corrida: el contador de intentos vive en memoria del
+# servidor y sobrevive a que se borre el usuario, asi que reusar el nombre
+# dejaria la cuenta nueva bloqueada por los fallos de la corrida anterior.
+FRENO=qa.freno.$$
 
 limpiar() {
   cred borrar "$FANTASMA"
+  cred borrar "$FRENO"
   cred restaurar "$SNAP" || echo "  !! quedaron sin restaurar las credenciales de $USUARIO ($SNAP)"
   rm -f "$JAR" "$SNAP"
 }
@@ -95,14 +100,58 @@ echo "6. sesion cuya cuenta ya no existe"
 # cuenta. Sin la comprobacion de `sesionViva`, la app renderiza normal y revienta
 # en la primera escritura contra la foreign key de Auditoria.
 GHOST=$(mktemp)
+
+# `login` usa el jar global; el fantasma necesita el suyo, asi que va aparte.
+glogin() { # glogin <usuario> <password>
+  local csrf
+  csrf=$(curl -sS -c "$GHOST" -b "$GHOST" "$BASE/api/auth/csrf" | sed -E 's/.*"csrfToken":"([^"]+)".*/\1/')
+  curl -sS -c "$GHOST" -b "$GHOST" -X POST "$BASE/api/auth/callback/credentials" \
+    -d "usuario=$1" -d "password=$2" -d "csrfToken=$csrf" -o /dev/null -w '%{redirect_url}'
+}
+gsesion() { curl -sS -c "$GHOST" -b "$GHOST" "$BASE/api/auth/session"; }
+gexport() { curl -sS -c "$GHOST" -b "$GHOST" "$BASE/api/inventario/export" -o /dev/null -w '%{http_code}'; }
+
+# Cuenta recien creada: la clave que puso el admin es de un solo uso y el flag
+# viaja en el token, asi que hay que entrar *despues* de ponerlo.
 cred crear "$FANTASMA" "$CLAVE" BODEGUERO
-# `login` usa el jar global; el fantasma necesita el suyo, asi que va inline.
-gcsrf=$(curl -sS -c "$GHOST" -b "$GHOST" "$BASE/api/auth/csrf" | sed -E 's/.*"csrfToken":"([^"]+)".*/\1/')
-curl -sS -c "$GHOST" -b "$GHOST" -X POST "$BASE/api/auth/callback/credentials"   -d "usuario=$FANTASMA" -d "password=$CLAVE" -d "csrfToken=$gcsrf" -o /dev/null
-check "el fantasma entra" '"usuario":"'"$FANTASMA"'"'   "$(curl -sS -c "$GHOST" -b "$GHOST" "$BASE/api/auth/session")"
+cred poner "$FANTASMA" "$CLAVE" true
+glogin "$FANTASMA" "$CLAVE" >/dev/null
+check "el fantasma entra" '"usuario":"'"$FANTASMA"'"'   "$(gsesion)"
+
+# /api/** vive fuera del grupo (app): el guard del layout no lo cubre y el
+# endpoint tiene que revalidar por su cuenta. Sin eso, la clave anotada en un
+# papel alcanzaba para bajarse el catalogo entero sin haberla cambiado nunca.
+check "con el cambio de clave pendiente, no exporta" "401" "$(gexport)"
+cred poner "$FANTASMA" "$CLAVE" false
+glogin "$FANTASMA" "$CLAVE" >/dev/null
+check "ya sin el flag, exporta"                      "200" "$(gexport)"
+
 cred borrar "$FANTASMA"
 check "con la cuenta borrada, el dashboard manda a login" "/login"   "$(curl -sS -c "$GHOST" -b "$GHOST" "$BASE/dashboard" -o /dev/null -w '%{redirect_url}')"
+# Mismo agujero que arriba pero por el lado de `activo`: con `auth()` a secas el
+# JWT de una cuenta ya borrada seguia bajando el inventario hasta que expirara.
+check "con la cuenta borrada, tampoco exporta"            "401"     "$(gexport)"
 rm -f "$GHOST"
+
+echo "7. freno de fuerza bruta"
+# Sin techo, /api/auth/callback/credentials acepta intentos sin limite y escribe
+# una fila de auditoria por cada uno: se prueban claves gratis y ~500 intentos
+# empujan todo evento real fuera de las 500 filas que muestra /reportes.
+FJAR=$(mktemp)
+cred crear "$FRENO" "$CLAVE" BODEGUERO
+flogin() { # flogin <password>
+  local csrf
+  csrf=$(curl -sS -c "$FJAR" -b "$FJAR" "$BASE/api/auth/csrf" | sed -E 's/.*"csrfToken":"([^"]+)".*/\1/')
+  curl -sS -c "$FJAR" -b "$FJAR" -X POST "$BASE/api/auth/callback/credentials" \
+    -d "usuario=$FRENO" -d "password=$1" -d "csrfToken=$csrf" -o /dev/null -w '%{redirect_url}'
+}
+flogin "$CLAVE" >/dev/null
+check "con la clave buena entra" '"usuario":"'"$FRENO"'"' "$(curl -sS -c "$FJAR" -b "$FJAR" "$BASE/api/auth/session")"
+for _ in $(seq 1 10); do flogin noesta >/dev/null; done
+# Bloqueado se rechaza con el mismo mensaje generico: no se le confirma a nadie
+# que la cuenta existe ni que le acerto a la clave.
+check "agotados los intentos, la clave buena tampoco entra" "error=CredentialsSignin" "$(flogin "$CLAVE")"
+rm -f "$FJAR"
 
 [[ $fail -eq 0 ]] && echo "TODO OK" || echo "HAY FALLOS"
 exit $fail

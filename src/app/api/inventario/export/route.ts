@@ -1,11 +1,18 @@
 import ExcelJS from "exceljs";
-import { auth } from "@/auth";
+import { sesionOperativa } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { ETIQUETA_NIVEL, nivelStock } from "@/lib/stock";
 
-/** Exportar el inventario está permitido para admin y bodeguero. */
+/**
+ * Exportar el inventario está permitido para admin y bodeguero.
+ *
+ * `sesionOperativa()` y no `auth()`: esta ruta vive fuera del grupo `(app)`, así
+ * que el guard del layout no la cubre. Con `auth()` a secas una cuenta ya
+ * desactivada seguía bajando el catálogo completo hasta que expirara el JWT, y
+ * una recién creada lo bajaba sin haber cambiado su clave de un solo uso.
+ */
 export async function GET() {
-  const session = await auth();
+  const session = await sesionOperativa();
   if (!session) return new Response("No autenticado", { status: 401 });
 
   const items = await prisma.item.findMany({

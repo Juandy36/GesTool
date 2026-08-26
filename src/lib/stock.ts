@@ -26,6 +26,12 @@ export const ETIQUETA_NIVEL: Record<NivelStock, string> = {
  * Descuento atómico de stock. El `gte` es la verificación: si otra salida se
  * adelantó no actualiza ninguna fila y devuelve `false`, así que el inventario
  * nunca queda negativo. Un `SELECT` previo dejaría esa ventana abierta.
+ *
+ * `activo: true` va en el mismo `where` por lo mismo: la baja es lógica, la fila
+ * sigue viva y la foreign key aguanta, así que sin esta condición un POST armado
+ * a mano — o una pestaña vieja cuyo selector todavía lista el ítem — movía stock
+ * de algo dado de baja. Ese ítem no sale ni en /inventario ni en el Excel (los
+ * dos filtran `activo`), así que el desvío quedaba invisible para siempre.
  */
 export async function descontarStock(
   tx: Pick<Prisma.TransactionClient, "item">,
@@ -33,8 +39,21 @@ export async function descontarStock(
   cantidad: number,
 ): Promise<boolean> {
   const { count } = await tx.item.updateMany({
-    where: { id: itemId, stock: { gte: cantidad } },
+    where: { id: itemId, activo: true, stock: { gte: cantidad } },
     data: { stock: { decrement: cantidad } },
+  });
+  return count > 0;
+}
+
+/** Contraparte para las entradas: mismo filtro por `activo`, sin tope de stock. */
+export async function sumarStock(
+  tx: Pick<Prisma.TransactionClient, "item">,
+  itemId: string,
+  cantidad: number,
+): Promise<boolean> {
+  const { count } = await tx.item.updateMany({
+    where: { id: itemId, activo: true },
+    data: { stock: { increment: cantidad } },
   });
   return count > 0;
 }

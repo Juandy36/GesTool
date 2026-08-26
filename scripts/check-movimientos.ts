@@ -10,7 +10,7 @@ import assert from "node:assert/strict";
 import { prisma } from "../src/lib/prisma";
 import { auditar } from "../src/lib/auditoria";
 import { inicioDelDiaLocal, instanteLocal } from "../src/lib/fechas";
-import { contarBajoMinimo, descontarStock, nivelStock } from "../src/lib/stock";
+import { contarBajoMinimo, descontarStock, nivelStock, sumarStock } from "../src/lib/stock";
 import type { AccionAuditoria } from "../src/generated/prisma/enums";
 
 const SUFIJO = `__check_${Date.now()}`;
@@ -80,6 +80,20 @@ async function main() {
       0,
       "no quedó la fila de auditoría",
     );
+
+    // Un ítem dado de baja no acepta movimientos. La baja es lógica: la fila
+    // sigue viva y la foreign key aguanta, así que sin `activo` en el `where`
+    // un POST armado a mano —o una pestaña vieja cuyo selector todavía lo
+    // lista— movía stock de algo que no sale ni en /inventario ni en el Excel,
+    // y el desvío quedaba invisible para siempre.
+    await prisma.item.update({ where: { id: item.id }, data: { stock: 20, activo: false } });
+    assert.equal(await descontarStock(prisma, item.id, 1), false, "de baja: no se descuenta");
+    assert.equal(await sumarStock(prisma, item.id, 1), false, "de baja: no se suma");
+    assert.equal(await leerStock(item.id), 20, "el stock del ítem de baja no se movió");
+
+    await prisma.item.update({ where: { id: item.id }, data: { activo: true } });
+    assert.equal(await sumarStock(prisma, item.id, 1), true, "activo de nuevo: sí se suma");
+    assert.equal(await leerStock(item.id), 21, "la entrada al ítem activo sí entra");
   } finally {
     await prisma.salida.deleteMany({ where: { itemId: item.id } });
     await prisma.entrada.deleteMany({ where: { itemId: item.id } });
@@ -108,7 +122,7 @@ async function main() {
   }
 
   console.log(
-  `OK: descuento atómico, rollback de auditoría, rango de fechas y contador de alertas (${enSql}).`,
+  `OK: descuento atómico, ítems de baja, rollback de auditoría, rango de fechas y contador de alertas (${enSql}).`,
 );
 }
 

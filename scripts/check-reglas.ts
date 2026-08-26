@@ -3,7 +3,9 @@
  * y cómo se calcula el semáforo de stock. Correr con `pnpm check:reglas`.
  */
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
+import { join, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { Session } from "next-auth";
 import { puedeAdministrar } from "../src/lib/rbac";
 import { comoDdMmAaaa, fechaLocal, instanteLocal } from "../src/lib/fechas";
@@ -60,22 +62,73 @@ assert.deepEqual(
 );
 assert.equal(orden[1].faltante, 50, "el faltante es mínimo - stock");
 
-// --- Toda server action de escritura arranca con el guard de rol ---
-// Barato de mantener y avisa si alguien agrega una acción sin protegerla.
-let acciones = 0;
-for (const modulo of ["inventario", "usuarios"]) {
-  const actions = readFileSync(
-    new URL(`../src/app/(app)/${modulo}/actions.ts`, import.meta.url),
-    "utf8",
-  );
-  const exportadas = [...actions.matchAll(/export async function (\w+)/g)].map((m) => m[1]);
-  assert.ok(exportadas.length >= 2, `${modulo}: se esperaban >=2 actions, hay ${exportadas.length}`);
-  for (const nombre of exportadas) {
-    const cuerpo = actions.slice(actions.indexOf(`export async function ${nombre}`));
-    const primeraLinea = cuerpo.split("\n").slice(1, 3).join("\n");
-    assert.match(primeraLinea, /soloAdmin\(\)/, `${modulo}/${nombre} no valida el rol al entrar`);
-  }
-  acciones += exportadas.length;
+// --- El hash dummy del login tiene que ser un hash de verdad ---
+// La constante escrita a mano tenía 66 caracteres y un bcrypt tiene 60, así que
+// `compare` la rechazaba por formato y volvía en 0 ms sin ejecutar una sola
+// ronda: el canal de timing que esa línea existe para tapar quedaba abierto, y
+// nada lo delataba. Se chequea en la fuente porque importar `src/auth.ts` acá
+// arrastraría NextAuth y Prisma enteros.
+const AUTH = readFileSync(new URL("../src/auth.ts", import.meta.url), "utf8");
+assert.match(AUTH, /bcrypt\.hashSync\(/, "el login no calcula su hash dummy");
+assert.doesNotMatch(
+  AUTH,
+  /["'`]\$2[aby]\$/,
+  "hay un hash bcrypt escrito a mano en src/auth.ts: calcularlo con bcrypt.hashSync",
+);
+
+// --- Toda server action de escritura valida la sesión antes de tocar la base ---
+// Antes esto recorría a mano ["inventario", "usuarios"] y solo aceptaba
+// `soloAdmin()`: dejaba fuera movimientos y cambiar-password, y cualquier
+// actions.ts nuevo pasaba sin que nadie lo mirara. Ahora los busca por glob y
+// verifica el invariante que importa — que el guard esté *antes* de la primera
+// consulta —, no que esté en una línea puntual.
+const RAIZ = fileURLToPath(new URL("..", import.meta.url));
+const GUARD = /\b(soloAdmin|usuarioActual|sesionViva|sesionOperativa)\(\)/;
+
+// `iniciarSesion` es el login: no puede exigir una sesión que todavía no existe.
+const SIN_GUARD = ["src/app/login/actions.ts"];
+
+/** Rutas relativas al repo, con `/` siempre, de todo archivo de `src/app` que se llame `nombre`. */
+function buscar(nombre: string) {
+  return readdirSync(join(RAIZ, "src/app"), { encoding: "utf8", recursive: true })
+    .map((ruta) => `src/app/${ruta.split(sep).join("/")}`)
+    .filter((ruta) => ruta.endsWith(`/${nombre}`))
+    .sort();
 }
 
-console.log(`OK: RBAC, semáforo de stock, urgencia y guard en ${acciones} server actions.`);
+const modulos = buscar("actions.ts").filter((ruta) => !SIN_GUARD.includes(ruta));
+
+assert.ok(modulos.length >= 4, `se esperaban >=4 módulos de actions, hay ${modulos.length}`);
+
+let acciones = 0;
+for (const modulo of modulos) {
+  const fuente = readFileSync(join(RAIZ, modulo), "utf8");
+  const inicios = [...fuente.matchAll(/export async function (\w+)/g)];
+  assert.ok(inicios.length > 0, `${modulo}: no exporta ninguna action`);
+
+  for (const [i, match] of inicios.entries()) {
+    const cuerpo = fuente.slice(match.index, inicios[i + 1]?.index ?? fuente.length);
+    const guard = cuerpo.search(GUARD);
+    const consulta = cuerpo.search(/\bprisma\./);
+
+    assert.ok(guard >= 0, `${modulo}/${match[1]} no valida la sesión`);
+    assert.ok(
+      consulta < 0 || guard < consulta,
+      `${modulo}/${match[1]} consulta la base antes del guard`,
+    );
+    acciones += 1;
+  }
+}
+
+// --- Los endpoints de /api tienen su propio guard: el layout de (app) no los cubre ---
+for (const ruta of buscar("route.ts").filter((r) => r.startsWith("src/app/api/"))) {
+  if (ruta.includes("[...nextauth]")) continue; // es el handler de NextAuth, no una ruta nuestra
+  const fuente = readFileSync(join(RAIZ, ruta), "utf8");
+  assert.match(fuente, GUARD, `${ruta} no valida la sesión`);
+  assert.ok(
+    !/\bawait auth\(\)/.test(fuente),
+    `${ruta} usa auth() a secas: un JWT de una cuenta desactivada pasaría`,
+  );
+}
+
+console.log(`OK: RBAC, semáforo de stock, urgencia, guard en ${acciones} server actions y en los endpoints de /api.`);
